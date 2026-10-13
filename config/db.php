@@ -1,13 +1,15 @@
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "traffic_map_db";
-$conn = mysqli_connect($servername, $username, $password, $dbname);
-if (!$conn) {
-    die("Connectiom failed: " . mysqli_conect_error());
+$host = 'localhost';
+$user = 'root';
+$pass = '';
+$dbname = 'traffic_map_db';
+
+$conn = new mysqli($host, $user, $pass, $dbname);
+
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
-if ($conn) {
-    echo "<br> <b>Ket noi thanh cong</b> <br>";
-}
+
+// Thêm dòng này để sửa lỗi font tiếng Việt trả về dạng \u00...
+$conn->set_charset("utf8mb4");
 ?>
