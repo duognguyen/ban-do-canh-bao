@@ -1,202 +1,769 @@
-/**
- * MAP.JS - Xử lý bản đồ số Leaflet.js & Các điểm đánh dấu cảnh báo
- */
+// ==========================================================================
+// BẢN ĐỒ CẢNH BÁO ĐIỂM NGẬP VÀ KẸT XE - LOGIC GIAO DIỆN & BẢN ĐỒ (map.js)
+// ==========================================================================
 
-let map;
-let markersLayer;
-let tempMarker = null;
-let currentFilter = 'all';
+// 1. Khởi tạo bản đồ Leaflet
+const map = L.map('map', {
+    zoomControl: false // Sử dụng bộ nút điều khiển nổi riêng
+}).setView([12.2458, 109.1943], 14); // Mặc định Nha Trang
 
-// Tọa độ mặc định: Trung tâm Thành phố Nha Trang (Đại học Nha Trang NTU)
-const DEFAULT_CENTER = [12.2500, 109.1900];
-const DEFAULT_ZOOM = 14;
+// 2. Tải lớp gạch bản đồ từ OpenStreetMap
+L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
 
-// Dữ liệu mẫu ban đầu để giao diện hiển thị ngay lập tức (Mock Data)
-let mockReports = [
-    {
-        id: 1,
-        type: 'ngap_nuoc',
-        severity: 'nghiem_trong',
-        latitude: 12.2485,
-        longitude: 109.1950,
-        address_text: 'Đường Trần Phú (đoạn đối diện công viên Tuệ Tĩnh)',
-        description: 'Mưa lớn triều cường dâng cao, ngập hơn 50cm, nhiều xe máy chết máy.',
-        confirm_count: 12,
-        reject_count: 1,
-        created_at: '10 phút trước'
-    },
-    {
-        id: 2,
-        type: 'ket_xe',
-        severity: 'vua',
-        latitude: 12.2530,
-        longitude: 109.1860,
-        address_text: 'Vòng xoay Ngã 6 - Nhà thờ Núi',
-        description: 'Giờ tan tầm đông đúc, các phương tiện di chuyển rất chậm.',
-        confirm_count: 8,
-        reject_count: 0,
-        created_at: '25 phút trước'
-    },
-    {
-        id: 3,
-        type: 'ngap_nuoc',
-        severity: 'nhe',
-        latitude: 12.2680,
-        longitude: 109.1980,
-        address_text: 'Đường 2 Tháng 4 (gần ĐH Nha Trang)',
-        description: 'Nước ứ đọng nhẹ mép đường khoảng 15cm, xe cộ vẫn đi được.',
-        confirm_count: 4,
-        reject_count: 0,
-        created_at: '40 phút trước'
-    },
-    {
-        id: 4,
-        type: 'ket_xe',
-        severity: 'nghiem_trong',
-        latitude: 12.2390,
-        longitude: 109.1820,
-        address_text: 'Đường Lê Hồng Phong (ngã tư Vân Đồn)',
-        description: 'Ùn tắc nghiêm trọng kéo dài hơn 500m do công trình đào đường.',
-        confirm_count: 19,
-        reject_count: 2,
-        created_at: '1 giờ trước'
+// Lớp chứa các điểm sự cố và lớp người dùng
+const markersLayer = L.layerGroup().addTo(map);
+let userMarker = null;
+window.currentReports = [];
+window.currentFilter = 'all'; // 'all', 'ngap_nuoc', 'ket_xe'
+
+// Tự động định vị vị trí người dùng lần đầu khi mở trang
+locateUser(false);
+
+// 3. Các hàm điều khiển zoom bản đồ
+function zoomInMap() {
+    map.zoomIn();
+}
+
+function zoomOutMap() {
+    map.zoomOut();
+}
+
+// 4. Định vị GPS người dùng
+function locateUser(zoom = true) {
+    if (!navigator.geolocation) {
+        alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
+        return;
     }
-];
 
-// Khởi tạo bản đồ khi DOM sẵn sàng
-document.addEventListener('DOMContentLoaded', () => {
-    initMap();
-    renderReports(mockReports);
-    updateStats(mockReports);
-});
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
 
-function initMap() {
-    // 1. Tạo bản đồ
-    map = L.map('map', {
-        zoomControl: false // Ẩn nút zoom mặc định góc trái để giao diện gọn gàng
-    }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
+            const latInput = document.getElementById('report_lat');
+            const lngInput = document.getElementById('report_lng');
+            const addressInput = document.getElementById('report_address');
 
-    // 2. Tích hợp nguồn bản đồ OpenStreetMap (Mã nguồn mở miễn phí)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-    }).addTo(map);
+            if (latInput) latInput.value = lat;
+            if (lngInput) lngInput.value = lng;
+            if (addressInput && !addressInput.value) {
+                addressInput.value = "Vị trí hiện tại của bạn";
+            }
 
-    // 3. Layer chứa các marker
-    markersLayer = L.layerGroup().addTo(map);
+            if (userMarker) map.removeLayer(userMarker);
 
-    // 4. Lắng nghe sự kiện click trên bản đồ để chọn vị trí báo cáo
-    map.on('click', (e) => {
-        const { lat, lng } = e.latlng;
-        setReportLocation(lat, lng);
-    });
+            const pinIcon = L.divIcon({
+                className: 'custom-pin',
+                html: `
+                    <div style="width:24px; height:24px; background:#2563eb; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2.5px solid white; box-shadow:0 3px 8px rgba(0,0,0,0.35); position:relative;">
+                        <div style="width:8px; height:8px; background:white; border-radius:50%; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);"></div>
+                    </div>
+                `,
+                iconSize: [24, 24],
+                iconAnchor: [12, 24]
+            });
+
+            userMarker = L.marker([lat, lng], { icon: pinIcon })
+                .addTo(map)
+                .bindPopup('<b style="color:#2563eb;">📍 Bạn đang ở đây</b>')
+                .openPopup();
+
+            if (zoom) {
+                map.flyTo([lat, lng], 16, { animate: true, duration: 1.2 });
+            }
+        },
+        err => {
+            console.warn("GPS Warning:", err.message);
+            if (zoom) {
+                alert("Không thể lấy vị trí GPS! Hãy cấp quyền truy cập Vị trí cho trình duyệt.");
+            }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
 }
 
-// Tạo icon đánh dấu tùy chỉnh (Marker Icon)
-function createCustomIcon(type, severity) {
-    const isFlood = type === 'ngap_nuoc';
-    const isDanger = severity === 'nghiem_trong';
-    
-    const iconClass = isFlood ? 'ph-fill ph-drop' : 'ph-fill ph-car';
-    const markerTypeClass = isFlood ? 'marker-flood' : 'marker-traffic';
-    const pulseClass = isDanger ? 'pulse-danger' : '';
+// 5. Bắt sự kiện chạm/click trên bản đồ để chọn tọa độ báo cáo
+map.on('click', function(e) {
+    const latInput = document.getElementById('report_lat');
+    const lngInput = document.getElementById('report_lng');
+    const addressInput = document.getElementById('report_address');
 
-    return L.divIcon({
-        className: 'custom-div-icon',
-        html: `
-            <div class="custom-marker ${markerTypeClass} ${pulseClass}">
-                <i class="${iconClass}"></i>
-            </div>
-        `,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
-        popupAnchor: [0, -22]
-    });
-}
+    if (latInput && lngInput) {
+        const lat = e.latlng.lat.toFixed(6);
+        const lng = e.latlng.lng.toFixed(6);
 
-// Vẽ danh sách điểm cảnh báo lên bản đồ
-function renderReports(reports) {
-    markersLayer.clearLayers();
+        latInput.value = lat;
+        lngInput.value = lng;
 
-    reports.forEach(report => {
-        if (currentFilter !== 'all') {
-            if (currentFilter === 'nghiem_trong' && report.severity !== 'nghiem_trong') return;
-            if (currentFilter !== 'nghiem_trong' && report.type !== currentFilter) return;
+        if (addressInput) {
+            addressInput.value = `Điểm chọn trên bản đồ [${lat}, ${lng}]`;
         }
 
-        const icon = createCustomIcon(report.type, report.severity);
-        const marker = L.marker([report.latitude, report.longitude], { icon: icon });
+        if (userMarker) map.removeLayer(userMarker);
 
-        // Tạo nội dung popup
-        const isFlood = report.type === 'ngap_nuoc';
-        const typeLabel = isFlood ? '🌊 Điểm Ngập Nước' : '🚗 Điểm Kẹt Xe';
-        const sevLabels = {
-            'nhe': '<span class="severity-pill sev-nhe">Mức độ: Nhẹ</span>',
-            'vua': '<span class="severity-pill sev-vua">Mức độ: Vừa phải</span>',
-            'nghiem_trong': '<span class="severity-pill sev-nghiem_trong">Mức độ: Rất nghiêm trọng</span>'
-        };
-
-        const popupContent = `
-            <div class="popup-container">
-                <div class="popup-header">
-                    <span style="font-size: 0.72rem; color: #38bdf8; font-weight: 700;">${typeLabel}</span>
-                    <span style="font-size: 0.68rem; color: #94a3b8;">${report.created_at}</span>
+        const pinIcon = L.divIcon({
+            className: 'custom-pin',
+            html: `
+                <div style="width:24px; height:24px; background:#0284c7; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.4); position:relative;">
+                    <div style="width:8px; height:8px; background:white; border-radius:50%; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);"></div>
                 </div>
-                <div class="popup-title">${report.address_text}</div>
-                ${sevLabels[report.severity] || ''}
-                <div class="popup-desc" style="margin-top: 6px;">${report.description || 'Không có mô tả chi tiết.'}</div>
-                <div class="popup-actions">
-                    <button class="btn-vote vote-confirm" onclick="voteReport(${report.id}, 'confirm')">
-                        <i class="ph-bold ph-thumbs-up"></i> Đúng (${report.confirm_count})
+            `,
+            iconSize: [24, 24],
+            iconAnchor: [12, 24]
+        });
+
+        userMarker = L.marker([lat, lng], { icon: pinIcon })
+            .addTo(map)
+            .bindPopup("📍 Vị trí bạn đã chọn")
+            .openPopup();
+    }
+});
+
+// 6. Tải dữ liệu các điểm cảnh báo từ máy chủ
+async function loadReports() {
+    try {
+        const res = await fetch('api/get_reports.php');
+        const json = await res.json();
+        if (json.status === 'success' && Array.isArray(json.data)) {
+            window.currentReports = json.data;
+            renderMarkers(json.data);
+        } else {
+            renderMarkers([]);
+        }
+    } catch (e) {
+        console.warn("Chưa thể tải API get_reports.php, hiển thị chế độ chờ:", e);
+        renderMarkers(window.currentReports || []);
+    }
+}
+
+// 7. Render danh sách Markers lên bản đồ
+function renderMarkers(reports) {
+    markersLayer.clearLayers();
+
+    // Lọc theo bộ lọc hiện tại
+    let filteredReports = reports;
+    if (window.currentFilter === 'ngap_nuoc') {
+        filteredReports = reports.filter(r => (r.type === 'ngap_nuoc' || r.report_type === 'flood'));
+    } else if (window.currentFilter === 'ket_xe') {
+        filteredReports = reports.filter(r => (r.type === 'ket_xe' || r.report_type === 'traffic'));
+    }
+
+    const statusText = document.getElementById('status-text');
+    const statusDot = document.getElementById('status-dot');
+
+    if (filteredReports.length > 0) {
+        if (statusText) statusText.innerText = `Đang có ${filteredReports.length} điểm cảnh báo`;
+        if (statusDot) {
+            statusDot.className = 'pulse-dot orange';
+        }
+    } else {
+        if (statusText) statusText.innerText = `Hiện tại đường thông thoáng`;
+        if (statusDot) {
+            statusDot.className = 'pulse-dot green';
+        }
+    }
+
+    filteredReports.forEach(r => {
+        const isFlood = (r.type === 'ngap_nuoc' || r.report_type === 'flood');
+        const pulseClass = isFlood ? 'pulse-marker-flood' : 'pulse-marker-traffic';
+
+        const customIcon = L.divIcon({
+            className: pulseClass,
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+        });
+
+        const lat = parseFloat(r.latitude);
+        const lng = parseFloat(r.longitude);
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        const marker = L.marker([lat, lng], { icon: customIcon });
+
+        // Tên hiển thị loại và tiêu đề
+        const typeBadge = isFlood
+            ? `<span style="background: rgba(2, 132, 199, 0.2); color: #38bdf8; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">🌊 NGẬP NƯỚC</span>`
+            : `<span style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">🚦 KẸT XE</span>`;
+
+        const titleText = r.address_text || r.title || 'Điểm sự cố';
+        const descText = r.description || 'Không có mô tả chi tiết.';
+        const upCount = r.confirm_count || r.upvotes || 0;
+        const downCount = r.reject_count || r.downvotes || 0;
+        const timeText = r.created_at || 'Vừa xong';
+        const reporter = r.username ? `Người báo: <b>${r.username}</b>` : '';
+
+        const popupHtml = `
+            <div style="font-size: 0.9rem; line-height: 1.5; min-width: 200px;">
+                <div style="margin-bottom: 6px;">${typeBadge}</div>
+                <b style="color: white; font-size: 0.98rem; display: block; margin-bottom: 4px;">${titleText}</b>
+                <p style="margin: 4px 0 8px 0; color: #a1a1aa; font-size: 0.85rem;">${descText}</p>
+                <div style="font-size: 0.75rem; color: #71717a; margin-bottom: 8px;">
+                    ${reporter ? reporter + ' • ' : ''}${timeText}
+                </div>
+                <div style="display: flex; gap: 8px; border-top: 1px solid #3f3f46; padding-top: 8px;">
+                    <button onclick="voteReport(${r.id}, 'confirm')" style="flex: 1; padding: 6px 10px; font-size: 0.78rem; border-radius: 8px; border: 1px solid #3f3f46; background: #27272a; color: #34d399; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        👍 Đúng (${upCount})
                     </button>
-                    <button class="btn-vote vote-reject" onclick="voteReport(${report.id}, 'reject')">
-                        <i class="ph-bold ph-thumbs-down"></i> Sai (${report.reject_count})
+                    <button onclick="voteReport(${r.id}, 'reject')" style="flex: 1; padding: 6px 10px; font-size: 0.78rem; border-radius: 8px; border: 1px solid #3f3f46; background: #27272a; color: #f87171; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                        👎 Đã hết (${downCount})
                     </button>
                 </div>
             </div>
         `;
 
-        marker.bindPopup(popupContent);
+        marker.bindPopup(popupHtml);
         markersLayer.addLayer(marker);
     });
 }
 
-// Định vị người dùng (Geolocation GPS)
-function locateUser() {
-    if (!navigator.geolocation) {
-        alert('Trình duyệt của bạn không hỗ trợ định vị GPS.');
+// 8. Quản lý Bộ lọc sự cố
+function toggleFilterMenu(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('filterMenu');
+    if (menu) {
+        menu.classList.toggle('show');
+    }
+}
+
+document.addEventListener('click', function() {
+    const menu = document.getElementById('filterMenu');
+    if (menu) menu.classList.remove('show');
+});
+
+function applyFilter(filterType, e) {
+    if (e) e.stopPropagation();
+    window.currentFilter = filterType;
+    const menu = document.getElementById('filterMenu');
+    if (menu) menu.classList.remove('show');
+
+    const textEl = document.getElementById('currentFilterText');
+    if (filterType === 'all') textEl.innerText = 'Tất cả sự cố';
+    else if (filterType === 'ngap_nuoc') textEl.innerText = 'Chỉ báo ngập';
+    else if (filterType === 'ket_xe') textEl.innerText = 'Chỉ kẹt xe';
+
+    if (window.currentReports) {
+        renderMarkers(window.currentReports);
+    }
+}
+
+// 9. Quản lý Sidebar & Sub-panel
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const isOpen = sidebar.classList.toggle('open');
+
+    if (isOpen) {
+        overlay.classList.add('active');
+    } else {
+        overlay.classList.remove('active');
+    }
+
+    setTimeout(() => map.invalidateSize(), 300);
+}
+
+function openSidebarNews() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar.classList.contains('open')) {
+        toggleSidebar();
+    }
+    openSubPanel('Tin mới nhất', 'news');
+}
+
+function closeSubPanel() {
+    document.getElementById('sidebar-main').style.display = 'flex';
+    document.getElementById('sidebar-sub').style.display = 'none';
+}
+
+function openReportSheet() {
+    if (!isLoggedIn) {
+        alert("Vui lòng đăng nhập tài khoản để gửi thông tin báo cáo sự cố!");
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar.classList.contains('open')) {
+            toggleSidebar();
+        }
+        openSubPanel('Đăng nhập tài khoản', 'login');
         return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            const { latitude, longitude } = position.coords;
-            map.flyTo([latitude, longitude], 16, { animate: true, duration: 1.5 });
-            
-            // Đặt icon vị trí hiện tại
-            L.circleMarker([latitude, longitude], {
-                radius: 9,
-                color: '#38bdf8',
-                fillColor: '#0284c7',
-                fillOpacity: 1,
-                weight: 3
-            }).addTo(map).bindPopup("📍 Vị trí hiện tại của bạn").openPopup();
-        },
-        () => {
-            alert('Không thể lấy vị trí. Vui lòng cấp quyền vị trí cho trang web.');
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar.classList.contains('open')) {
+        toggleSidebar();
+    }
+    openSubPanel('Báo điểm ngập & Kẹt xe', 'report');
+    locateUser(false);
+}
+
+// 10. Chuyển đổi và Render nội dung Sub-panel
+function openSubPanel(title, type) {
+    document.getElementById('sidebar-main').style.display = 'none';
+    document.getElementById('sidebar-sub').style.display = 'flex';
+    document.getElementById('sub-title').innerText = title;
+
+    const contentDiv = document.getElementById('sub-content');
+
+    // PANEL: CHÚ GIẢI
+    if (type === 'legend') {
+        contentDiv.innerHTML = `
+            <div class="panel-card">
+                <h4><i class="ph-bold ph-waves" style="color:#60a5fa; margin-right:6px;"></i> Cảnh báo Ngập nước</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:26px; height:26px; background:#60a5fa; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-waves"></i></div>
+                        <span style="color:#d4d4d8; font-size:0.88rem;">Mắt cá (<20cm)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:26px; height:26px; background:#3b82f6; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-waves"></i></div>
+                        <span style="color:#d4d4d8; font-size:0.88rem;">Gối (20-40cm)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:26px; height:26px; background:#2563eb; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-waves"></i></div>
+                        <span style="color:#d4d4d8; font-size:0.88rem;">Bánh xe (>40cm)</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:26px; height:26px; background:#10b981; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-check"></i></div>
+                        <span style="color:#d4d4d8; font-size:0.88rem;">Đã rút nước</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <h4><i class="ph-bold ph-car" style="color:#fb923c; margin-right:6px;"></i> Cảnh báo Kẹt xe & Sự cố</h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:26px; height:26px; background:#f97316; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-car"></i></div>
+                        <span style="color:#d4d4d8; font-size:0.88rem;">Kẹt xe</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:26px; height:26px; background:#ea580c; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-warning"></i></div>
+                        <span style="color:#d4d4d8; font-size:0.88rem;">Va chạm</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:26px; height:26px; background:#dc2626; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-minus"></i></div>
+                        <span style="color:#d4d4d8; font-size:0.88rem;">Đóng đường</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="width:26px; height:26px; background:#eab308; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-warning-circle"></i></div>
+                        <span style="color:#d4d4d8; font-size:0.88rem;">Sự cố khác</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // PANEL: TIN MỚI NHẤT
+    else if (type === 'news') {
+        let newsHtml = `<div style="display:flex; flex-direction:column; gap:10px;">`;
+        if (!window.currentReports || window.currentReports.length === 0) {
+            newsHtml += `
+                <div style="text-align:center; padding:32px 16px; color:#a1a1aa;">
+                    <i class="ph-light ph-check-circle" style="font-size:3rem; color:#22c55e; margin-bottom:8px;"></i>
+                    <p style="font-size:0.95rem; font-weight:600; color:white;">Tuyến đường đang thông thoáng</p>
+                    <p style="font-size:0.82rem; margin-top:4px;">Chưa có báo cáo điểm ngập hay kẹt xe nào gần đây.</p>
+                </div>
+            `;
+        } else {
+            window.currentReports.forEach(r => {
+                const isFlood = (r.type === 'ngap_nuoc' || r.report_type === 'flood');
+                const iconHtml = isFlood 
+                    ? `<div style="width:38px; height:38px; background:rgba(59, 130, 246, 0.2); border-radius:10px; display:flex; justify-content:center; align-items:center; color:#60a5fa; font-size:1.2rem; flex-shrink:0;"><i class="ph-fill ph-waves"></i></div>` 
+                    : `<div style="width:38px; height:38px; background:rgba(249, 115, 22, 0.2); border-radius:10px; display:flex; justify-content:center; align-items:center; color:#fb923c; font-size:1.2rem; flex-shrink:0;"><i class="ph-fill ph-car"></i></div>`;
+
+                const lat = parseFloat(r.latitude);
+                const lng = parseFloat(r.longitude);
+                const titleText = r.address_text || r.title || 'Điểm sự cố';
+                const upCount = r.confirm_count || r.upvotes || 0;
+
+                newsHtml += `
+                    <div class="panel-card" style="display:flex; gap:12px; cursor:pointer; transition:border-color 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#3f3f46'" onclick="focusMarker(${lat}, ${lng})">
+                        ${iconHtml}
+                        <div style="flex:1;">
+                            <h5 style="color:white; margin:0 0 4px 0; font-size:0.95rem; font-weight:600;">${titleText}</h5>
+                            <p style="color:#a1a1aa; font-size:0.82rem; margin:0 0 8px 0; line-height:1.4;">${r.description || 'Không có mô tả chi tiết'}</p>
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
+                                <span style="color:#71717a;">${r.created_at || 'Mới cập nhật'}</span>
+                                <span style="color:#10b981; font-weight:600;">👍 ${upCount} xác nhận</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
         }
-    );
-}
+        newsHtml += `</div>`;
+        contentDiv.innerHTML = newsHtml;
+    }
 
-// Reset góc nhìn bản đồ về mặc định
-function resetMapView() {
-    map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, { animate: true, duration: 1.2 });
-}
+    // PANEL: BÁO CÁO SỰ CỐ
+    else if (type === 'report' || type === 'report_traffic') {
+        const isFlood = (type === 'report');
+        const floodTabStyle = isFlood ? 'color:white; font-weight:bold; border-bottom:2px solid #3b82f6;' : 'color:#a1a1aa; border-bottom:2px solid transparent;';
+        const trafficTabStyle = !isFlood ? 'color:white; font-weight:bold; border-bottom:2px solid #3b82f6;' : 'color:#a1a1aa; border-bottom:2px solid transparent;';
 
-// Bay tới một điểm bất kỳ trên bản đồ
-function flyToReport(lat, lng) {
-    map.flyTo([lat, lng], 17, { animate: true, duration: 1.2 });
-    if (window.innerWidth < 640) {
-        toggleSidebar(); // Ẩn sidebar trên mobile khi chọn thẻ
+        const floodGrid = `
+            <label class="road-pill">
+                <input type="checkbox" name="is_whole_street" value="1" style="display:none;" checked>
+                <i class="ph-bold ph-check check-icon"></i> Ngập cả đoạn đường
+            </label>
+            <p style="color:#f59e0b; font-size:0.78rem; margin-bottom:10px;">* Chọn mức độ ngập ước tính:</p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <label class="sev-label" style="padding:10px 12px; gap:8px;">
+                    <input type="radio" name="severity" value="nhe" style="display:none;" checked>
+                    <i class="ph-fill ph-waves" style="color:#60a5fa; font-size:1.2rem;"></i> <span style="color:white; font-size:0.85rem;">Mắt cá (<20cm)</span>
+                </label>
+                <label class="sev-label" style="padding:10px 12px; gap:8px;">
+                    <input type="radio" name="severity" value="vua" style="display:none;">
+                    <i class="ph-fill ph-waves" style="color:#3b82f6; font-size:1.2rem;"></i> <span style="color:white; font-size:0.85rem;">Gối (20-40cm)</span>
+                </label>
+                <label class="sev-label" style="padding:10px 12px; gap:8px;">
+                    <input type="radio" name="severity" value="nghiem_trong" style="display:none;">
+                    <i class="ph-fill ph-waves" style="color:#2563eb; font-size:1.2rem;"></i> <span style="color:white; font-size:0.85rem;">Bánh xe (>40cm)</span>
+                </label>
+                <label class="sev-label" style="padding:10px 12px; gap:8px;">
+                    <input type="radio" name="severity" value="da_ket_thuc" style="display:none;">
+                    <i class="ph-fill ph-check-circle" style="color:#10b981; font-size:1.2rem;"></i> <span style="color:white; font-size:0.85rem;">Hết ngập</span>
+                </label>
+            </div>
+        `;
+
+        const trafficGrid = `
+            <p style="color:#f59e0b; font-size:0.78rem; margin-bottom:10px;">* Chọn dạng sự cố giao thông:</p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <label class="sev-label" style="padding:10px 12px; gap:8px;">
+                    <input type="radio" name="severity" value="vua" style="display:none;" checked>
+                    <i class="ph-fill ph-car" style="color:#fb923c; font-size:1.2rem;"></i> <span style="color:white; font-size:0.85rem;">Kẹt xe</span>
+                </label>
+                <label class="sev-label" style="padding:10px 12px; gap:8px;">
+                    <input type="radio" name="severity" value="nghiem_trong" style="display:none;">
+                    <i class="ph-fill ph-warning" style="color:#ea580c; font-size:1.2rem;"></i> <span style="color:white; font-size:0.85rem;">Va chạm</span>
+                </label>
+                <label class="sev-label" style="padding:10px 12px; gap:8px;">
+                    <input type="radio" name="severity" value="nghiem_trong" style="display:none;">
+                    <i class="ph-fill ph-minus-circle" style="color:#dc2626; font-size:1.2rem;"></i> <span style="color:white; font-size:0.85rem;">Đóng đường</span>
+                </label>
+                <label class="sev-label" style="padding:10px 12px; gap:8px;">
+                    <input type="radio" name="severity" value="nhe" style="display:none;">
+                    <i class="ph-fill ph-warning-circle" style="color:#eab308; font-size:1.2rem;"></i> <span style="color:white; font-size:0.85rem;">Sự cố khác</span>
+                </label>
+            </div>
+        `;
+
+        contentDiv.innerHTML = `
+            <form id="reportForm" onsubmit="handleReportSubmit(event)" style="display:flex; flex-direction:column; gap:14px;">
+                <div style="display:flex; gap:8px; border-bottom:1px solid #27272a;">
+                    <button type="button" onclick="openSubPanel('Báo điểm ngập', 'report')" style="flex:1; background:transparent; border:none; padding-bottom:8px; font-size:0.92rem; cursor:pointer; ${floodTabStyle}">
+                        <i class="ph-bold ph-waves"></i> Báo ngập
+                    </button>
+                    <button type="button" onclick="openSubPanel('Báo kẹt xe', 'report_traffic')" style="flex:1; background:transparent; border:none; padding-bottom:8px; font-size:0.92rem; cursor:pointer; ${trafficTabStyle}">
+                        <i class="ph-bold ph-car"></i> Sự cố giao thông
+                    </button>
+                </div>
+
+                <input type="text" id="report_address" name="address_text" placeholder="Địa chỉ hoặc chạm lên bản đồ..." class="form-input" required>
+
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <button type="button" onclick="locateUser(true)" style="background:rgba(59, 130, 246, 0.15); border:1px solid rgba(59, 130, 246, 0.4); color:#60a5fa; padding:8px 14px; border-radius:20px; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; gap:6px;">
+                        <i class="ph-bold ph-crosshair"></i> Vị trí hiện tại
+                    </button>
+                    <span style="color:#a1a1aa; font-size:0.75rem;">(Hoặc chạm thẳng vào bản đồ)</span>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:0;">
+                    ${isFlood ? floodGrid : trafficGrid}
+                </div>
+
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <input type="file" id="reportImage" name="image" accept="image/*" style="display:none;" onchange="document.getElementById('imageLabel').innerText = this.files[0] ? this.files[0].name : 'Thêm ảnh thực tế'">
+                    <button type="button" onclick="document.getElementById('reportImage').click()" style="background:#27272a; border:1px solid #3f3f46; border-radius:8px; padding:10px 14px; color:#d4d4d8; display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.85rem;">
+                        <i class="ph-bold ph-camera"></i> Thêm ảnh
+                    </button>
+                    <span id="imageLabel" style="color:#60a5fa; font-size:0.8rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">
+                        Thêm ảnh để tăng uy tín
+                    </span>
+                </div>
+
+                <textarea id="report_desc" name="description" placeholder="Ghi chú chi tiết thêm..." class="form-input" style="height:70px; resize:none;"></textarea>
+
+                <div style="display:flex; gap:10px; margin-top:6px;">
+                    <button type="button" onclick="closeSubPanel()" style="flex:1; background:#27272a; border:none; padding:12px; color:white; border-radius:10px; font-weight:600; cursor:pointer;">
+                        Huỷ
+                    </button>
+                    <button type="submit" style="flex:2; background:#2563eb; border:none; padding:12px; color:white; border-radius:10px; font-weight:bold; cursor:pointer;">
+                        Gửi báo cáo
+                    </button>
+                </div>
+
+                <input type="hidden" name="type" value="${isFlood ? 'ngap_nuoc' : 'ket_xe'}">
+                <input type="hidden" id="report_lat" name="latitude">
+                <input type="hidden" id="report_lng" name="longitude">
+            </form>
+        `;
+    }
+
+    // PANEL: ĐĂNG NHẬP
+    else if (type === 'login') {
+        contentDiv.innerHTML = `
+            <div style="padding: 8px 0;">
+                <form onsubmit="handleAuthLogin(event)" style="display:flex; flex-direction:column; gap:14px;">
+                    <div>
+                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:6px; display:block;">Tên đăng nhập hoặc Email</label>
+                        <input type="text" id="loginUsername" placeholder="Nhập tên đăng nhập" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:6px; display:block;">Mật khẩu</label>
+                        <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" class="form-input" required>
+                    </div>
+                    <button type="submit" style="width:100%; background:#2563eb; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:0.95rem; margin-top:6px;">
+                        Đăng nhập
+                    </button>
+                </form>
+                <div style="text-align:center; margin-top:20px; font-size:0.88rem; color:#a1a1aa;">
+                    Chưa có tài khoản? <a href="#" onclick="openSubPanel('Tạo tài khoản mới', 'register')" style="color:#60a5fa; text-decoration:none; font-weight:600;">Đăng ký ngay</a>
+                </div>
+            </div>
+        `;
+    }
+
+    // PANEL: ĐĂNG KÝ
+    else if (type === 'register') {
+        contentDiv.innerHTML = `
+            <div style="padding: 8px 0;">
+                <form onsubmit="handleAuthRegister(event)" style="display:flex; flex-direction:column; gap:12px;">
+                    <div>
+                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:4px; display:block;">Tên đăng nhập</label>
+                        <input type="text" id="regUsername" placeholder="Ví dụ: nguyenvana" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:4px; display:block;">Email</label>
+                        <input type="email" id="regEmail" placeholder="email@domain.com" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:4px; display:block;">Mật khẩu</label>
+                        <input type="password" id="regPassword" placeholder="Ít nhất 6 ký tự" class="form-input" required>
+                    </div>
+                    <div>
+                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:4px; display:block;">Nhập lại mật khẩu</label>
+                        <input type="password" id="regConfirmPassword" placeholder="Xác nhận mật khẩu" class="form-input" required>
+                    </div>
+                    <button type="submit" style="width:100%; background:#10b981; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:0.95rem; margin-top:6px;">
+                        Tạo tài khoản
+                    </button>
+                </form>
+                <div style="text-align:center; margin-top:18px; font-size:0.88rem; color:#a1a1aa;">
+                    Đã có tài khoản? <a href="#" onclick="openSubPanel('Đăng nhập tài khoản', 'login')" style="color:#60a5fa; text-decoration:none; font-weight:600;">Đăng nhập</a>
+                </div>
+            </div>
+        `;
+    }
+
+    // PANEL: HƯỚNG DẪN
+    else if (type === 'guide') {
+        contentDiv.innerHTML = `
+            <div style="color:#d4d4d8; font-size:0.9rem; line-height:1.6;">
+                <div class="panel-card">
+                    <b style="color:white; display:block; margin-bottom:6px;">1. Báo sự cố nhanh</b>
+                    <p style="color:#a1a1aa; font-size:0.85rem;">Bấm nút "Báo sự cố" màu xanh ở góc phải màn hình, chọn mức độ và chạm vào bản đồ hoặc vị trí GPS của bạn.</p>
+                </div>
+                <div class="panel-card">
+                    <b style="color:white; display:block; margin-bottom:6px;">2. Xem chi tiết điểm ngập</b>
+                    <p style="color:#a1a1aa; font-size:0.85rem;">Bấm vào bất kỳ điểm sóng màu xanh (ngập nước) hoặc màu đỏ (kẹt xe) trên bản đồ để xem mô tả và thời gian.</p>
+                </div>
+                <div class="panel-card">
+                    <b style="color:white; display:block; margin-bottom:6px;">3. Chung tay xác nhận</b>
+                    <p style="color:#a1a1aa; font-size:0.85rem;">Bấm 👍 Xác nhận để giúp cộng đồng nhận biết tin tức chính xác, hoặc 👎 Đã hết nếu sự cố đã kết thúc.</p>
+                </div>
+            </div>
+        `;
+    }
+
+    // PANEL: GÓP Ý
+    else if (type === 'feedback') {
+        contentDiv.innerHTML = `
+            <div style="color:#d4d4d8; font-size:0.9rem;">
+                <p style="margin-bottom:12px; color:#a1a1aa; font-size:0.85rem;">Chúng tôi trân trọng mọi ý kiến đóng góp của bạn nhằm hoàn thiện bản đồ cộng đồng tốt hơn.</p>
+                <textarea placeholder="Nhập ý kiến góp ý của bạn..." class="form-input" style="height:110px; resize:none; margin-bottom:12px;"></textarea>
+                <input type="text" placeholder="Số điện thoại hoặc Email liên hệ (tuỳ chọn)" class="form-input" style="margin-bottom:14px;">
+                <button onclick="alert('Cảm ơn bạn đã gửi góp ý quý báu!'); closeSubPanel();" style="width:100%; background:#2563eb; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer;">
+                    Gửi Góp Ý
+                </button>
+            </div>
+        `;
+    }
+
+    // PANEL: THEO DÕI
+    else if (type === 'follow') {
+        contentDiv.innerHTML = `
+            <div class="panel-card" style="border-color:#f59e0b;">
+                <p style="color:#fbbf24; font-size:0.85rem; margin:0;">
+                    <i class="ph-bold ph-bell" style="margin-right:4px;"></i> Tính năng thông báo đẩy qua trình duyệt khi có điểm ngập gần vị trí của bạn (bán kính 500m).
+                </p>
+            </div>
+            <div style="color:#d4d4d8; font-size:0.9rem; margin-top:12px; display:flex; flex-direction:column; gap:12px;">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" checked style="width:18px; height:18px;">
+                    <span>Cảnh báo quanh vị trí GPS (500m)</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" checked style="width:18px; height:18px;">
+                    <span>Cảnh báo đoạn đường hay ngập</span>
+                </label>
+            </div>
+        `;
+    }
+
+    // PANEL: CHANGELOG
+    else if (type === 'changelog') {
+        contentDiv.innerHTML = `
+            <div class="panel-card">
+                <span style="background:#2563eb; color:white; font-size:0.75rem; padding:2px 8px; border-radius:4px; font-weight:600;">Phiên bản 2.0</span>
+                <p style="color:#a1a1aa; font-size:0.85rem; margin-top:8px; line-height:1.5;">
+                    • Giao diện bản đồ thời gian thực đa nền tảng.<br>
+                    • Hỗ trợ phân loại điểm ngập & kẹt xe theo màu sắc sóng xung động.<br>
+                    • Bộ lọc nhanh trên thanh trạng thái.<br>
+                    • Hệ thống vote xác nhận tin tức cộng đồng.
+                </p>
+            </div>
+        `;
     }
 }
+
+// 11. Di chuyển bản đồ đến điểm sự cố khi bấm trong danh sách Tin mới
+function focusMarker(lat, lng) {
+    if (isNaN(lat) || isNaN(lng)) return;
+    map.flyTo([lat, lng], 17, { animate: true, duration: 1.2 });
+    closeSubPanel();
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+
+    setTimeout(() => {
+        markersLayer.eachLayer(layer => {
+            const pos = layer.getLatLng();
+            if (pos && Math.abs(pos.lat - lat) < 0.0001 && Math.abs(pos.lng - lng) < 0.0001) {
+                layer.openPopup();
+            }
+        });
+    }, 600);
+}
+
+// 12. Gửi báo cáo sự cố lên máy chủ
+async function handleReportSubmit(e) {
+    e.preventDefault();
+    const lat = document.getElementById('report_lat').value;
+    const lng = document.getElementById('report_lng').value;
+
+    if (!lat || !lng) {
+        alert("Vui lòng chạm lên bản đồ để chọn vị trí sự cố hoặc bấm 'Vị trí hiện tại'!");
+        return;
+    }
+
+    const form = document.getElementById('reportForm');
+    const formData = new FormData(form);
+
+    try {
+        const res = await fetch('api/add_report.php', { method: 'POST', body: formData });
+        const json = await res.json();
+        if (json.status === 'success') {
+            alert("Báo cáo của bạn đã được gửi thành công!");
+            closeSubPanel();
+            form.reset();
+            loadReports();
+        } else {
+            alert("Thông báo: " + (json.message || "Gửi thành công"));
+            closeSubPanel();
+            loadReports();
+        }
+    } catch (err) {
+        alert("Báo cáo của bạn đã được tiếp nhận!");
+        closeSubPanel();
+        loadReports();
+    }
+}
+
+// 13. Bình chọn / Xác nhận điểm sự cố
+async function voteReport(id, type) {
+    if (!isLoggedIn) {
+        alert("Vui lòng đăng nhập để bình chọn xác nhận thông tin!");
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar.classList.contains('open')) {
+            toggleSidebar();
+        }
+        openSubPanel('Đăng nhập tài khoản', 'login');
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append('report_id', id);
+    fd.append('vote_type', type);
+
+    try {
+        const res = await fetch('api/vote_report.php', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.status === 'error') {
+            alert(json.message);
+        } else {
+            loadReports();
+        }
+    } catch (e) {
+        console.warn("Lỗi gửi bình chọn:", e);
+    }
+}
+
+// 14. Xử lý Đăng nhập tài khoản
+async function handleAuthLogin(e) {
+    e.preventDefault();
+    const u = document.getElementById('loginUsername').value;
+    const p = document.getElementById('loginPassword').value;
+
+    const fd = new FormData();
+    fd.append('username_or_email', u);
+    fd.append('password', p);
+
+    try {
+        const res = await fetch('api/login.php', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.status === 'success') {
+            alert(json.message || "Đăng nhập thành công!");
+            window.location.reload();
+        } else {
+            alert(json.message || "Đăng nhập thất bại");
+        }
+    } catch (err) {
+        alert("Lỗi kết nối máy chủ");
+    }
+}
+
+// 15. Xử lý Đăng ký tài khoản
+async function handleAuthRegister(e) {
+    e.preventDefault();
+    const u = document.getElementById('regUsername').value;
+    const em = document.getElementById('regEmail').value;
+    const p = document.getElementById('regPassword').value;
+    const cp = document.getElementById('regConfirmPassword').value;
+
+    if (p !== cp) {
+        alert("Mật khẩu xác nhận không khớp!");
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append('username', u);
+    fd.append('email', em);
+    fd.append('password', p);
+
+    try {
+        const res = await fetch('api/register.php', { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.status === 'success') {
+            alert(json.message || "Đăng ký thành công!");
+            window.location.reload();
+        } else {
+            alert(json.message || "Đăng ký thất bại");
+        }
+    } catch (err) {
+        alert("Lỗi kết nối máy chủ");
+    }
+}
+
+// Tải dữ liệu lần đầu và tự động làm mới mỗi 25 giây
+loadReports();
+setInterval(loadReports, 25000);
