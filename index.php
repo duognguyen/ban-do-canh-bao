@@ -16,6 +16,6 @@ require_once __DIR__ . '/views/layout/sidebar.php';
 </div>
 
 <?php
-// 3. Nhúng Footer giao diện (nút bấm nổi, map controls, script leaflet & map.js)
+
 require_once __DIR__ . '/views/layout/footer.php';
 ?>
