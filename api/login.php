@@ -3,7 +3,7 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../config/db.php';
 require_once '../models/UserModel.php';
-$input = json_decode(file_get_contents('php;//input', true));
+$input = json_decode(file_get_contents('php://input'), true);
 $username_or_email = $_POST['username_or_email'] ?? $input['username_or_email'] ?? '';
 $password = $_POST['password'] ?? $input['password'] ?? '';
 
