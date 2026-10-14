@@ -1,0 +1,607 @@
+:root {
+    --primary: #0284c7;
+    --primary-dark: #0369a1;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #10b981;
+    --bg-glass: rgba(255, 255, 255, 0.92);
+    --border-color: rgba(226, 232, 240, 0.9);
+    --text-main: #0f172a;
+    --text-sub: #64748b;
+    --sidebar-bg: #18181b;
+    --card-bg: #27272a;
+    --card-border: #3f3f46;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0f172a;
+}
+
+/* Khung bản đồ toàn màn hình */
+.main-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* 1. Cụm nút mở menu góc trên trái */
+.top-left-actions {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    z-index: 1000;
+}
+
+.btn-menu {
+    background: white;
+    border: 1px solid var(--border-color);
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    font-size: 1.25rem;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+.btn-menu:hover {
+    background: #f8fafc;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+}
+
+/* 2. Thanh thông báo trạng thái & Bộ lọc ở giữa trên */
+.top-center-bar {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    background: rgba(39, 39, 42, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(63, 63, 70, 0.8);
+    border-radius: 30px;
+    padding: 5px 8px;
+    gap: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    align-items: center;
+    max-width: calc(100vw - 120px);
+}
+
+.notification-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 20px;
+    transition: background 0.2s ease;
+    white-space: nowrap;
+}
+
+.notification-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.pulse-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.pulse-dot.orange {
+    background-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+    animation: pulse-orange 2s infinite;
+}
+
+.pulse-dot.green {
+    background-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.25);
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-orange {
+    0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6); }
+    70% { box-shadow: 0 0 0 8px rgba(249, 115, 22, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+}
+
+@keyframes pulse-green {
+    0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+    70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.filter-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #18181b;
+    border-radius: 20px;
+    color: #cbd5e1;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid #3f3f46;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    position: relative;
+}
+
+.filter-pill:hover {
+    background: #27272a;
+    color: white;
+}
+
+.filter-menu-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #27272a;
+    border-radius: 12px;
+    border: 1px solid #3f3f46;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    min-width: 170px;
+    z-index: 1001;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+}
+
+.filter-menu-dropdown.show {
+    display: flex;
+}
+
+.filter-option {
+    padding: 10px 16px;
+    color: #e4e4e7;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #3f3f46;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-option:last-child {
+    border-bottom: none;
+}
+
+.filter-option:hover {
+    background: #3f3f46;
+    color: white;
+}
+
+/* 3. Cụm nút hành động góc dưới phải */
+.bottom-right-actions {
+    position: absolute;
+    right: 16px;
+    bottom: 24px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 14px;
+}
+
+.map-controls {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.btn-control {
+    width: 42px;
+    height: 42px;
+    background: white;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: #334155;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.btn-control:last-child {
+    border-bottom: none;
+}
+
+.btn-control:hover {
+    background: #f1f5f9;
+    color: var(--primary);
+}
+
+.btn-report {
+    background: linear-gradient(135deg, #0284c7, #2563eb);
+    color: white;
+    border: none;
+    padding: 14px 26px;
+    border-radius: 30px;
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-report:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(37, 99, 235, 0.55);
+}
+
+.btn-report:active {
+    transform: scale(0.96);
+}
+
+/* 4. SIDEBAR CHÍNH VÀ CÁC SUB-PANEL */
+.sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 360px;
+    max-width: 88vw;
+    background: var(--sidebar-bg);
+    z-index: 2001;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.4);
+}
+
+.sidebar.open {
+    transform: translateX(0);
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid #27272a;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #38bdf8, #2563eb);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.3rem;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.brand-text h2 {
+    color: white;
+    font-size: 1.15rem;
+    margin: 0 0 2px 0;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.brand-text p {
+    color: #a1a1aa;
+    font-size: 0.78rem;
+    margin: 0;
+}
+
+.btn-close-sidebar {
+    background: transparent;
+    border: none;
+    color: #a1a1aa;
+    font-size: 1.3rem;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+
+.btn-close-sidebar:hover {
+    background: #27272a;
+    color: white;
+}
+
+.sidebar-menu {
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    color: #d4d4d8;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.menu-item:hover {
+    background: #27272a;
+    color: white;
+}
+
+.menu-item.active {
+    background: rgba(37, 99, 235, 0.15);
+    color: #60a5fa;
+}
+
+.menu-item i {
+    font-size: 1.25rem;
+    color: #94a3b8;
+}
+
+.menu-item:hover i {
+    color: #60a5fa;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: #27272a;
+    margin: 8px 20px;
+}
+
+.sidebar-links {
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sidebar-links a {
+    color: #a1a1aa;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-links a:hover {
+    color: white;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding: 20px;
+    border-top: 1px solid #27272a;
+}
+
+/* Sub-panel content */
+.sidebar-sub-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+.sidebar-sub-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-sub-content::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+    border-radius: 3px;
+}
+
+/* 5. Custom Marker Animations trên Leaflet */
+.pulse-marker-flood {
+    width: 22px;
+    height: 22px;
+    background: rgba(2, 132, 199, 0.9);
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    animation: ripple-flood 2s infinite ease-out;
+}
+
+@keyframes ripple-flood {
+    0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.75); }
+    70% { box-shadow: 0 0 0 16px rgba(2, 132, 199, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
+}
+
+.pulse-marker-traffic {
+    width: 22px;
+    height: 22px;
+    background: rgba(239, 68, 68, 0.9);
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    animation: ripple-traffic 2s infinite ease-out;
+}
+
+@keyframes ripple-traffic {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.75); }
+    70% { box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Ghim vị trí người dùng */
+.custom-pin {
+    filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
+}
+
+/* Card thiết kế trong sub-panel */
+.panel-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.panel-card h4 {
+    color: white;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+/* Label chọn mức độ (Severity Radio) */
+.sev-label {
+    background: var(--card-bg);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.sev-label:hover {
+    border-color: #52525b;
+}
+
+.sev-label:has(input:checked) {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: #3b82f6;
+}
+
+/* Kiểu nút đoạn đường */
+.road-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    color: #d4d4d8;
+    padding: 8px 16px;
+    border-radius: 24px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid #3f3f46;
+    transition: 0.2s;
+    margin-bottom: 8px;
+}
+
+.road-pill:has(input:checked) {
+    background: white;
+    color: black;
+    border-color: white;
+}
+
+.road-pill .check-icon {
+    display: none;
+}
+
+.road-pill:has(input:checked) .check-icon {
+    display: inline-block;
+    color: black;
+    font-size: 1.1rem;
+}
+
+/* Input & Textarea form */
+.form-input {
+    width: 100%;
+    background: #18181b;
+    border: 1px solid #3f3f46;
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    border-color: #3b82f6;
+}
+
+/* Custom Popup cho Leaflet */
+.leaflet-popup-content-wrapper {
+    background: #18181b;
+    color: #f4f4f5;
+    border-radius: 14px;
+    padding: 4px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    border: 1px solid #3f3f46;
+}
+
+.leaflet-popup-tip {
+    background: #18181b;
+    border: 1px solid #3f3f46;
+}
+
+.leaflet-popup-content {
+    margin: 12px 14px;
+    line-height: 1.5;
+}
