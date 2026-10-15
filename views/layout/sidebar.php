@@ -19,7 +19,7 @@
                 <i class="ph ph-x"></i>
             </button>
         </div>
-        
+
         <div class="sidebar-menu">
             <a href="#" class="menu-item" onclick="openSubPanel('Chú giải biểu tượng', 'legend')">
                 <i class="ph ph-list-dashes"></i>
@@ -34,9 +34,9 @@
                 <span>Theo dõi</span>
             </a>
         </div>
-        
+
         <div class="sidebar-divider"></div>
-        
+
         <div class="sidebar-links">
             <a href="#" onclick="openSubPanel('Góp ý xây dựng', 'feedback')">
                 <i class="ph ph-chat-teardrop-dots"></i> Góp ý
@@ -48,7 +48,7 @@
                 <i class="ph ph-sparkle"></i> Cập nhật mới
             </a>
         </div>
-        
+
         <div class="sidebar-divider"></div>
 
         <!-- Phần thông tin tài khoản ở chân Sidebar -->
@@ -61,12 +61,16 @@
                         <span style="background: #3b82f6; color: white; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Admin</span>
                     <?php endif; ?>
                 </div>
+                
                 <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                    <a href="views/admin/dashboard.php" style="color: #60a5fa; font-weight: 600; font-size: 0.95rem; text-decoration: none;">
-                        <i class="ph-bold ph-shield-check" style="margin-right: 8px;"></i> Quản trị Admin
-                    </a>
+                      <a href="index.php?route=admin_login" style="color: #94a3b8; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                    <i class="ph-bold ph-shield-check" style="color: #3b82f6;"></i> Cổng Quản Trị Viên (Admin) &rarr;
+                </a>
+
                 <?php endif; ?>
-                <a href="api/logout.php" style="color: #ef4444; font-weight: 600; font-size: 0.95rem; text-decoration: none;">
+                
+                <!-- Nút Đăng xuất trỏ thẳng qua Router index.php?route=logout để xử lý mượt mà -->
+                <a href="index.php?route=logout" onclick="localStorage.removeItem('currentUser');" style="color: #ef4444; font-weight: 600; font-size: 0.95rem; text-decoration: none; cursor: pointer;">
                     <i class="ph-bold ph-sign-out" style="margin-right: 8px;"></i> Đăng xuất
                 </a>
             <?php else: ?>
