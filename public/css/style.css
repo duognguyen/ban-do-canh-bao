@@ -515,13 +515,17 @@ body, html {
 
 /* 5. Custom Marker Animations trên Leaflet */
 .pulse-marker-flood {
-    width: 22px;
-    height: 22px;
-    background: rgba(2, 132, 199, 0.9);
-    border: 3px solid white;
+    width: 26px;
+    height: 26px;
+    background: rgba(2, 132, 199, 0.95);
+    border: 2.5px solid white;
     border-radius: 50%;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     animation: ripple-flood 2s infinite ease-out;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 @keyframes ripple-flood {
@@ -531,13 +535,17 @@ body, html {
 }
 
 .pulse-marker-traffic {
-    width: 22px;
-    height: 22px;
-    background: rgba(239, 68, 68, 0.9);
-    border: 3px solid white;
+    width: 26px;
+    height: 26px;
+    background: rgba(239, 68, 68, 0.95);
+    border: 2.5px solid white;
     border-radius: 50%;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     animation: ripple-traffic 2s infinite ease-out;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 @keyframes ripple-traffic {

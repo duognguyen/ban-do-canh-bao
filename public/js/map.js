@@ -194,7 +194,7 @@ map.on('click', function(e) {
 // 8. Tải dữ liệu các điểm cảnh báo từ máy chủ
 async function loadReports() {
     try {
-        const res = await fetch('api/get_reports.php');
+        const res = await fetch('api/reports.php');
         const json = await res.json();
         if (json.status === 'success' && Array.isArray(json.data)) {
             window.currentReports = json.data;
@@ -205,7 +205,7 @@ async function loadReports() {
             renderMarkers([]);
         }
     } catch (e) {
-        console.warn("Lỗi tải API get_reports.php:", e);
+        console.warn("Lỗi tải API reports.php:", e);
         renderMarkers([]);
     }
 }
@@ -242,8 +242,9 @@ function renderMarkers(reports) {
 
         const customIcon = L.divIcon({
             className: pulseClass,
-            iconSize: [22, 22],
-            iconAnchor: [11, 11]
+            iconSize: [26, 26],
+            iconAnchor: [13, 13],
+            html: `<div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:12px; line-height:1;">${isFlood ? '🌊' : '🚦'}</div>`
         });
 
         const lat = parseFloat(r.latitude);
