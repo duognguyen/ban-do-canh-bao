@@ -157,3 +157,4 @@ window.loginWithFirebaseGoogle = async function(mode = 'login') {
         throw error;
     }
 };
+

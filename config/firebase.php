@@ -21,3 +21,4 @@ if (!defined('FIREBASE_API_KEY')) {
 if (!defined('FIREBASE_PROJECT_ID')) {
     define('FIREBASE_PROJECT_ID', 'ban-do-canh-bao');
 }
+
