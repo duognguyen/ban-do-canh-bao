@@ -2,10 +2,21 @@
 // BẢN ĐỒ CẢNH BÁO ĐIỂM NGẬP VÀ KẸT XE - LOGIC GIAO DIỆN & BẢN ĐỒ (map.js)
 // ==========================================================================
 
+<<<<<<< HEAD
 // 1. Khởi tạo bản đồ Leaflet
 const map = L.map('map', {
     zoomControl: false // Sử dụng bộ nút điều khiển nổi riêng
 }).setView([12.2458, 109.1943], 14); // Mặc định Nha Trang
+=======
+// 1. Khởi tạo bản đồ Leaflet (Ưu tiên vị trí gần nhất của người dùng)
+const savedLat = parseFloat(localStorage.getItem('lastKnownLat')) || 12.2458;
+const savedLng = parseFloat(localStorage.getItem('lastKnownLng')) || 109.1943;
+const defaultZoom = localStorage.getItem('lastKnownLat') ? 16 : 14;
+
+const map = L.map('map', {
+    zoomControl: false // Sử dụng bộ nút điều khiển nổi riêng
+}).setView([savedLat, savedLng], defaultZoom);
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 
 // 2. Tải lớp gạch bản đồ từ OpenStreetMap
 L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
@@ -19,9 +30,14 @@ let userMarker = null;
 window.currentReports = [];
 window.currentFilter = 'all'; // 'all', 'ngap_nuoc', 'ket_xe'
 
+<<<<<<< HEAD
 // Tự động định vị vị trí người dùng lần đầu khi mở trang
 locateUser(false);
 //
+=======
+// Tự động định vị và zoom sát vào vị trí người dùng ngay khi vào trang
+locateUser(true);
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 loadReports();
 
 // 3. Các hàm điều khiển zoom bản đồ
@@ -34,9 +50,15 @@ function zoomOutMap() {
 }
 
 // 4. Định vị GPS người dùng
+<<<<<<< HEAD
 function locateUser(zoom = true) {
     if (!navigator.geolocation) {
         alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
+=======
+function locateUser(zoom = true, showAlert = false) {
+    if (!navigator.geolocation) {
+        if (showAlert) alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
         return;
     }
 
@@ -45,6 +67,13 @@ function locateUser(zoom = true) {
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
 
+<<<<<<< HEAD
+=======
+            // Lưu lại vị trí để lần sau mở trang là ở ngay đây
+            localStorage.setItem('lastKnownLat', lat);
+            localStorage.setItem('lastKnownLng', lng);
+
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
             const latInput = document.getElementById('report_lat');
             const lngInput = document.getElementById('report_lng');
             const addressInput = document.getElementById('report_address');
@@ -73,13 +102,23 @@ function locateUser(zoom = true) {
                 .bindPopup('<b style="color:#2563eb;">📍 Bạn đang ở đây</b>')
                 .openPopup();
 
+<<<<<<< HEAD
             if (zoom) {
                 map.flyTo([lat, lng], 16, { animate: true, duration: 1.2 });
+=======
+            // Zoom sát vào vị trí người dùng (mức zoom 16.5 cận cảnh)
+            if (zoom) {
+                map.flyTo([lat, lng], 16.5, { animate: true, duration: 1.2 });
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
             }
         },
         err => {
             console.warn("GPS Warning:", err.message);
+<<<<<<< HEAD
             if (zoom) {
+=======
+            if (showAlert) {
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
                 alert("Không thể lấy vị trí GPS! Hãy cấp quyền truy cập Vị trí cho trình duyệt.");
             }
         },
@@ -89,10 +128,17 @@ function locateUser(zoom = true) {
 
 // 5. Bắt sự kiện chạm/click trên bản đồ để chọn tọa độ báo cáo
 map.on('click', function(e) {
+<<<<<<< HEAD
+=======
+    const lat = e.latlng.lat.toFixed(6);
+    const lng = e.latlng.lng.toFixed(6);
+
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
     const latInput = document.getElementById('report_lat');
     const lngInput = document.getElementById('report_lng');
     const addressInput = document.getElementById('report_address');
 
+<<<<<<< HEAD
     if (latInput && lngInput) {
         const lat = e.latlng.lat.toFixed(6);
         const lng = e.latlng.lng.toFixed(6);
@@ -140,6 +186,47 @@ async function loadReports() {
     }
 }
 
+=======
+    if (latInput) latInput.value = lat;
+    if (lngInput) lngInput.value = lng;
+    if (addressInput) {
+        addressInput.value = `Điểm chọn trên bản đồ [${lat}, ${lng}]`;
+    }
+
+    if (userMarker) map.removeLayer(userMarker);
+
+    const pinIcon = L.divIcon({
+        className: 'custom-pin',
+        html: `
+            <div style="width:24px; height:24px; background:#0284c7; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.4); position:relative;">
+                <div style="width:8px; height:8px; background:white; border-radius:50%; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);"></div>
+            </div>
+        `,
+        iconSize: [24, 24],
+        iconAnchor: [12, 24]
+    });
+
+    userMarker = L.marker([lat, lng], { icon: pinIcon })
+        .addTo(map)
+        .bindPopup("📍 Vị trí bạn đã chọn: " + lat + ", " + lng)
+        .openPopup();
+
+    // Mở khung form báo cáo (xử lý bằng PHP thuần)
+    openReportPanel();
+});
+
+// 6. Tải dữ liệu các điểm cảnh báo từ API máy chủ
+async function loadReports() {
+    try {
+        const reports = await Api.reports(window.currentFilter || 'all');
+        window.currentReports = Array.isArray(reports) ? reports : [];
+        renderMarkers(window.currentReports);
+    } catch (e) {
+        console.warn("Lỗi tải API reports:", e.message);
+        renderMarkers([]);
+    }
+}
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 // 7. Render danh sách Markers lên bản đồ
 function renderMarkers(reports) {
     markersLayer.clearLayers();
@@ -249,6 +336,7 @@ function applyFilter(filterType, e) {
     }
 }
 
+<<<<<<< HEAD
 // 9. Quản lý Sidebar & Sub-panel
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
@@ -259,6 +347,16 @@ function toggleSidebar() {
         overlay.classList.add('active');
     } else {
         overlay.classList.remove('active');
+=======
+// 9. Quản lý Sidebar & Sub-panel (Không dùng lớp phủ mờ)
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const isOpen = sidebar.classList.toggle('open');
+
+    if (!isOpen) {
+        closeReportPanel();
+        closeSubPanel();
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
     }
 
     setTimeout(() => map.invalidateSize(), 300);
@@ -266,9 +364,16 @@ function toggleSidebar() {
 
 function openSidebarNews() {
     const sidebar = document.getElementById('sidebar');
+<<<<<<< HEAD
     if (!sidebar.classList.contains('open')) {
         toggleSidebar();
     }
+=======
+    const rep = document.getElementById('sidebar-report');
+    if (rep) rep.style.display = 'none';
+
+    if (sidebar) sidebar.classList.add('open');
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
     openSubPanel('Tin mới nhất', 'news');
 }
 
@@ -277,6 +382,7 @@ function closeSubPanel() {
     document.getElementById('sidebar-sub').style.display = 'none';
 }
 
+<<<<<<< HEAD
 function openReportSheet() {
     if (!isLoggedIn) {
         alert("Vui lòng đăng nhập tài khoản để gửi thông tin báo cáo sự cố!");
@@ -294,6 +400,108 @@ function openReportSheet() {
     }
     openSubPanel('Báo điểm ngập & Kẹt xe', 'report');
     locateUser(false);
+=======
+function openReportPanel() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (sidebar) sidebar.classList.add('open');
+    // KHÔNG bật lớp mờ overlay để người dùng thoải mái click lên bản đồ chọn/đổi vị trí
+    if (overlay) overlay.classList.remove('active');
+
+    const main = document.getElementById('sidebar-main');
+    const sub = document.getElementById('sidebar-sub');
+    const rep = document.getElementById('sidebar-report');
+
+    if (main) main.style.display = 'none';
+    if (sub) sub.style.display = 'none';
+    if (rep) rep.style.display = 'flex';
+}
+
+function closeReportPanel() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const rep = document.getElementById('sidebar-report');
+    const main = document.getElementById('sidebar-main');
+
+    if (rep) rep.style.display = 'none';
+    if (main) main.style.display = 'flex';
+    if (sidebar) sidebar.classList.remove('open');
+    if (overlay) overlay.classList.remove('active');
+}
+
+function openReportSheet() {
+    openReportPanel();
+    // Nếu chưa có tọa độ, tự động định vị GPS gợi ý
+    const latInput = document.getElementById('report_lat');
+    if (!latInput || !latInput.value) {
+        locateUser(false);
+    }
+}
+
+// Xử lý gửi báo cáo ngầm qua API (Hoàn toàn KHÔNG reload trang)
+async function handleReportFormSubmit(e) {
+    if (e) e.preventDefault();
+
+    const form = document.getElementById('reportAddForm');
+    if (!form) return;
+
+    const lat = document.getElementById('report_lat').value;
+    const lng = document.getElementById('report_lng').value;
+    if (!lat || !lng) {
+        showToast("Vui lòng chạm lên bản đồ để chọn vị trí sự cố!", false);
+        return;
+    }
+
+    const formData = new FormData(form);
+
+    try {
+        await Api.addReport(formData);
+        showToast("Gửi báo cáo sự cố thành công!", true);
+        closeReportPanel();
+        form.reset();
+        // Cập nhật ngay điểm mới lên bản đồ
+        await loadReports();
+    } catch (err) {
+        showToast(err.message || "Không thể gửi báo cáo!", false);
+    }
+}
+
+// Hiển thị thông báo kết quả mượt mà không làm gián đoạn bản đồ
+function showToast(message, isSuccess = true) {
+    const existing = document.getElementById('app-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'app-toast';
+    toast.style.cssText = `
+        position: fixed;
+        top: 75px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 99999;
+        background: ${isSuccess ? '#059669' : '#dc2626'};
+        color: white;
+        padding: 12px 24px;
+        border-radius: 10px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+    `;
+    toast.innerHTML = `
+        <i class="${isSuccess ? 'ph-bold ph-check-circle' : 'ph-bold ph-warning-circle'}" style="font-size: 1.25rem;"></i>
+        <span>${message}</span>
+    `;
+    toast.onclick = () => toast.remove();
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        if (toast && toast.parentNode) toast.remove();
+    }, 3500);
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 }
 
 // 10. Chuyển đổi và Render nội dung Sub-panel
@@ -355,8 +563,15 @@ function openSubPanel(title, type) {
 
     // PANEL: TIN MỚI NHẤT
     else if (type === 'news') {
+<<<<<<< HEAD
         let newsHtml = `<div style="display:flex; flex-direction:column; gap:10px;">`;
         if (!window.currentReports || window.currentReports.length === 0) {
+=======
+        let newsHtml = `<div style="display:flex; flex-direction:column; gap:12px;">`;
+        const reports = window.currentReports || [];
+
+        if (reports.length === 0) {
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
             newsHtml += `
                 <div style="text-align:center; padding:32px 16px; color:#a1a1aa;">
                     <i class="ph-light ph-check-circle" style="font-size:3rem; color:#22c55e; margin-bottom:8px;"></i>
@@ -365,7 +580,36 @@ function openSubPanel(title, type) {
                 </div>
             `;
         } else {
+<<<<<<< HEAD
             window.currentReports.forEach(r => {
+=======
+            const floodCount = reports.filter(r => (r.type === 'ngap_nuoc' || r.report_type === 'flood')).length;
+            const trafficCount = reports.filter(r => (r.type === 'ket_xe' || r.report_type === 'traffic')).length;
+
+            // Thẻ thống kê tổng quan các sự cố đang diễn ra
+            newsHtml += `
+                <div class="panel-card" style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95)); border: 1px solid #3b82f6; padding: 14px; margin-bottom: 4px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="color:white; font-weight:700; font-size:0.95rem;">
+                            <i class="ph-bold ph-warning-circle" style="color:#f59e0b; margin-right:4px;"></i> Tổng sự cố đang diễn ra
+                        </span>
+                        <span style="background:#2563eb; color:white; font-size:0.85rem; font-weight:700; padding:3px 10px; border-radius:20px;">
+                            ${reports.length} điểm
+                        </span>
+                    </div>
+                    <div style="display:flex; gap:12px; font-size:0.85rem;">
+                        <span style="background:rgba(59, 130, 246, 0.15); color:#60a5fa; padding:4px 8px; border-radius:6px; font-weight:600;">
+                            🌊 ${floodCount} Ngập nước
+                        </span>
+                        <span style="background:rgba(249, 115, 22, 0.15); color:#fb923c; padding:4px 8px; border-radius:6px; font-weight:600;">
+                            🚦 ${trafficCount} Kẹt xe
+                        </span>
+                    </div>
+                </div>
+            `;
+
+            reports.forEach(r => {
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
                 const isFlood = (r.type === 'ngap_nuoc' || r.report_type === 'flood');
                 const iconHtml = isFlood 
                     ? `<div style="width:38px; height:38px; background:rgba(59, 130, 246, 0.2); border-radius:10px; display:flex; justify-content:center; align-items:center; color:#60a5fa; font-size:1.2rem; flex-shrink:0;"><i class="ph-fill ph-waves"></i></div>` 
@@ -376,6 +620,7 @@ function openSubPanel(title, type) {
                 const titleText = r.address_text || r.title || 'Điểm sự cố';
                 const upCount = r.confirm_count || r.upvotes || 0;
 
+<<<<<<< HEAD
                 newsHtml += `
                     <div class="panel-card" style="display:flex; gap:12px; cursor:pointer; transition:border-color 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#3f3f46'" onclick="focusMarker(${lat}, ${lng})">
                         ${iconHtml}
@@ -385,6 +630,30 @@ function openSubPanel(title, type) {
                             <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
                                 <span style="color:#71717a;">${r.created_at || 'Mới cập nhật'}</span>
                                 <span style="color:#10b981; font-weight:600;">👍 ${upCount} xác nhận</span>
+=======
+                const sevMap = {
+                    'nhe': '<span style="color:#34d399; font-size:0.75rem;">(Mức nhẹ)</span>',
+                    'vua': '<span style="color:#f59e0b; font-size:0.75rem;">(Mức vừa)</span>',
+                    'nghiem_trong': '<span style="color:#ef4444; font-size:0.75rem; font-weight:700;">(Nghiêm trọng)</span>'
+                };
+                const sevText = sevMap[r.severity] || '';
+
+                newsHtml += `
+                    <div class="panel-card" style="display:flex; gap:12px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#3f3f46'" onclick="focusMarker(${lat}, ${lng})">
+                        ${iconHtml}
+                        <div style="flex:1;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                                <h5 style="color:white; margin:0; font-size:0.92rem; font-weight:600; line-height:1.4;">${titleText}</h5>
+                            </div>
+                            <div style="margin-bottom:6px;">
+                                <span style="font-size:0.78rem; font-weight:600; color:${isFlood ? '#60a5fa' : '#fb923c'};">${isFlood ? 'Điểm ngập' : 'Kẹt xe'}</span>
+                                ${sevText}
+                            </div>
+                            <p style="color:#a1a1aa; font-size:0.82rem; margin:0 0 8px 0; line-height:1.4;">${r.description || 'Không có mô tả chi tiết'}</p>
+                            <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; border-top:1px dashed #3f3f46; padding-top:6px;">
+                                <span style="color:#71717a;"><i class="ph ph-clock"></i> ${r.created_at || 'Mới cập nhật'}</span>
+                                <span style="color:#38bdf8; font-weight:600;"><i class="ph-bold ph-crosshair"></i> Xem vị trí</span>
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
                             </div>
                         </div>
                     </div>
@@ -646,6 +915,7 @@ function focusMarker(lat, lng) {
     }, 600);
 }
 
+<<<<<<< HEAD
 // 12. Gửi báo cáo sự cố lên máy chủ
 async function handleReportSubmit(e) {
     e.preventDefault();
@@ -681,6 +951,9 @@ async function handleReportSubmit(e) {
 }
 
 // 13. Bình chọn / Xác nhận điểm sự cố
+=======
+// 13. Bình chọn / Xác nhận điểm sự cố qua API
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 async function voteReport(id, type) {
     if (!isLoggedIn) {
         alert("Vui lòng đăng nhập để bình chọn xác nhận thông tin!");
@@ -692,6 +965,7 @@ async function voteReport(id, type) {
         return;
     }
 
+<<<<<<< HEAD
     const fd = new FormData();
     fd.append('report_id', id);
     fd.append('vote_type', type);
@@ -706,15 +980,29 @@ async function voteReport(id, type) {
         }
     } catch (e) {
         console.warn("Lỗi gửi bình chọn:", e);
+=======
+    try {
+        const res = await Api.vote(id, type);
+        showToast("Đã ghi nhận bình chọn của bạn!", true);
+        // Tải lại dữ liệu để cập nhật số vote trên popup bản đồ
+        await loadReports();
+    } catch (err) {
+        showToast(err.message || "Lỗi gửi bình chọn!", false);
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
     }
 }
 
 // 14. Xử lý Đăng nhập tài khoản
+<<<<<<< HEAD
+=======
+// 14. Xử lý Đăng nhập tài khoản qua API
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 async function handleAuthLogin(e) {
     e.preventDefault();
     const u = document.getElementById('loginUsername').value;
     const p = document.getElementById('loginPassword').value;
 
+<<<<<<< HEAD
     const fd = new FormData();
     fd.append('username_or_email', u);
     fd.append('password', p);
@@ -734,6 +1022,18 @@ async function handleAuthLogin(e) {
 }
 
 // 15. Xử lý Đăng ký tài khoản
+=======
+    try {
+        const res = await Api.login(u, p);
+        showToast("Đăng nhập thành công!", true);
+        setTimeout(() => window.location.reload(), 600);
+    } catch (err) {
+        showToast(err.message || "Đăng nhập thất bại!", false);
+    }
+}
+
+// 15. Xử lý Đăng ký tài khoản qua API
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 async function handleAuthRegister(e) {
     e.preventDefault();
     const u = document.getElementById('regUsername').value;
@@ -742,6 +1042,7 @@ async function handleAuthRegister(e) {
     const cp = document.getElementById('regConfirmPassword').value;
 
     if (p !== cp) {
+<<<<<<< HEAD
         alert("Mật khẩu xác nhận không khớp!");
         return;
     }
@@ -762,6 +1063,18 @@ async function handleAuthRegister(e) {
         }
     } catch (err) {
         alert("Lỗi kết nối máy chủ");
+=======
+        showToast("Mật khẩu xác nhận không khớp!", false);
+        return;
+    }
+
+    try {
+        await Api.register({ username: u, email: em, password: p, confirm_password: cp });
+        showToast("Đăng ký thành công! Đang chuyển hướng...", true);
+        setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+        showToast(err.message || "Đăng ký thất bại!", false);
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
     }
 }
 

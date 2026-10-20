@@ -7,7 +7,11 @@
             <button class="btn-control" onclick="zoomOutMap()" title="Thu nhỏ">
                 <i class="ph-bold ph-minus"></i>
             </button>
+<<<<<<< HEAD
             <button class="btn-control" onclick="locateUser(true)" title="Vị trí của bạn">
+=======
+            <button class="btn-control" onclick="locateUser(true, true)" title="Vị trí của bạn">
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
                 <i class="ph-bold ph-crosshair"></i>
             </button>
         </div>
@@ -26,7 +30,12 @@
         const currentUsername = <?= isset($_SESSION['username']) ? json_encode($_SESSION['username']) : 'null'; ?>;
     </script>
 
+<<<<<<< HEAD
     <!-- JS Bản đồ & Tương tác giao diện -->
+=======
+       <!-- API Client & JS Bản đồ -->
+    <script src="public/js/api.js"></script>
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
     <script src="public/js/map.js"></script>
 </body>
 </html>

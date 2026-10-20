@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../config/db.php';
@@ -43,3 +44,11 @@ if ($user) {
 }
 
 ?>
+=======
+// POST /api/login.php  { username_or_email, password }
+require_once __DIR__ . '/../config/bootstrap.php';
+require_once __DIR__ . '/../controllers/AuthController.php';
+
+require_method('POST');
+respond((new AuthController($conn))->login(get_input()));
+>>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
