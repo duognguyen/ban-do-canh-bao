@@ -1546,24 +1546,28 @@ async function handleF8ResetPasswordSubmit(e) {
 // TIỆN ÍCH GOOGLE AUTH & ĐĂNG NHẬP ADMIN TRÊN BẢN ĐỒ
 // =========================================================================
 async function startGoogleAuthFromMap(mode = 'login') {
-    const email = prompt("ĐĂNG NHẬP / ĐĂNG KÝ VỚI TÀI KHOẢN GOOGLE\nNhập địa chỉ Gmail của bạn:", "user@gmail.com");
-    if (!email) return;
-    const name = prompt("Họ và tên hiển thị của bạn:", "Người dùng Google") || "";
-
-    showToast("Đang xác thực tài khoản Google...", true);
-    try {
-        const res = await Api.googleLogin({ email: email.trim(), name: name.trim() });
-        showToast("Đăng nhập với Google thành công!", true);
-        setTimeout(() => {
-            if (res && res.role === 'admin') {
-                window.location.href = 'index.php?route=admin_dashboard';
-            } else {
-                window.location.reload();
-            }
-        }, 600);
-    } catch (err) {
-        showToast(err.message || "Đăng nhập Google thất bại!", false);
+    if (typeof window.loginWithFirebaseGoogle === 'function') {
+        try {
+            await window.loginWithFirebaseGoogle(mode);
+            return;
+        } catch (e) {
+            console.warn('[Firebase Map Auth]', e);
+            return;
+        }
     }
+
+    showToast('Đang kết nối cổng Google qua Firebase...', true);
+    setTimeout(async () => {
+        if (typeof window.loginWithFirebaseGoogle === 'function') {
+            try {
+                await window.loginWithFirebaseGoogle(mode);
+                return;
+            } catch (e) {
+                return;
+            }
+        }
+        window.location.href = (mode === 'register') ? 'index.php?route=register' : 'index.php?route=login';
+    }, 400);
 }
 
 async function handleAdminLoginFromMap(e) {

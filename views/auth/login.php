@@ -269,6 +269,8 @@ $isAdminRoute = (isset($_GET['route']) && $_GET['route'] === 'admin_login') || i
             100% { transform: scale(1); opacity: 1; }
         }
     </style>
+    <!-- Firebase Auth Web SDK (Google Sign-In) -->
+    <script type="module" src="public/js/firebase-auth.js"></script>
 </head>
 <body>
     <div class="auth-card">
@@ -576,22 +578,41 @@ $isAdminRoute = (isset($_GET['route']) && $_GET['route'] === 'admin_login') || i
         }
 
         // Bấm nút Đăng nhập với Google
-        function startGoogleSignIn() {
-            // Nếu đã cấu hình Client ID thật trên GCP -> Mở popup Google chính thức
-            if (googleTokenClient && window.GOOGLE_CLIENT_ID && !window.GOOGLE_CLIENT_ID.includes('sampleclientid')) {
-                googleTokenClient.requestAccessToken({ prompt: 'select_account' });
-                return;
-            }
-
-            // Nếu chưa cấu hình GCP hoặc đang thử nghiệm localhost -> Mở popup chọn tài khoản
-            const modal = document.getElementById('googleAuthModal');
-            if (modal) {
-                modal.style.display = 'flex';
-                const input = document.getElementById('googleEmailInput');
-                if (input && !input.value) {
-                    input.focus();
+        // Bấm nút Đăng nhập với Google qua Firebase Auth
+        async function startGoogleSignIn() {
+            if (typeof window.loginWithFirebaseGoogle === 'function') {
+                try {
+                    await window.loginWithFirebaseGoogle('login');
+                    return;
+                } catch (e) {
+                    console.warn('[Firebase Login]', e);
+                    return;
                 }
             }
+
+            showToast('Đang kết nối cổng Google qua Firebase...', true);
+            setTimeout(async () => {
+                if (typeof window.loginWithFirebaseGoogle === 'function') {
+                    try {
+                        await window.loginWithFirebaseGoogle('login');
+                        return;
+                    } catch (e) {
+                        return;
+                    }
+                }
+
+                if (googleTokenClient && window.GOOGLE_CLIENT_ID && !window.GOOGLE_CLIENT_ID.includes('sampleclientid')) {
+                    googleTokenClient.requestAccessToken({ prompt: 'select_account' });
+                    return;
+                }
+
+                const modal = document.getElementById('googleAuthModal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    const input = document.getElementById('googleEmailInput');
+                    if (input && !input.value) input.focus();
+                }
+            }, 300);
         }
 
         function closeGoogleModal() {

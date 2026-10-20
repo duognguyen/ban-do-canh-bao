@@ -36,6 +36,8 @@ if (file_exists($googleConfigFile)) {
 
     <!-- Style CSS -->
     <link rel="stylesheet" href="public/css/style.css">
+    <!-- Firebase Auth Web SDK (Google Sign-In) -->
+    <script type="module" src="public/js/firebase-auth.js"></script>
 </head>
 <body>
 

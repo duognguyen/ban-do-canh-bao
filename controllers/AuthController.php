@@ -3,6 +3,7 @@
 // Nghiệp vụ xác thực: Đăng ký (OTP), Đăng nhập (Remember Me 30 ngày), Quên & Đặt lại mật khẩu (Token/OTP 15 phút).
 require_once __DIR__ . '/../models/UserModel.php';
 require_once __DIR__ . '/../services/Mailer.php';
+if (file_exists(__DIR__ . '/../config/firebase.php')) { require_once __DIR__ . '/../config/firebase.php'; }
 
 class AuthController {
     private $conn;
@@ -236,6 +237,34 @@ class AuthController {
      */
     private function verifyGoogleToken(string $token): ?array
     {
+        // 0. Thử xác thực Firebase ID Token qua Google Identity Toolkit REST API
+        $firebaseKey = defined('FIREBASE_API_KEY') ? FIREBASE_API_KEY : 'AIzaSyA_bTtrkXNsKC6yj2SlbRMvOn2HJWTmz64';
+        $fbUrl = 'https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=' . urlencode($firebaseKey);
+        $ch = curl_init($fbUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['idToken' => $token]));
+        $fbResp = curl_exec($ch);
+        $fbCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($fbCode === 200 && $fbResp) {
+            $fbData = json_decode($fbResp, true);
+            if (!empty($fbData['users'][0]['email'])) {
+                $u = $fbData['users'][0];
+                return [
+                    'email'    => strtolower(trim($u['email'])),
+                    'name'     => $u['displayName'] ?? '',
+                    'sub'      => $u['localId'] ?? '',
+                    'picture'  => $u['photoUrl'] ?? '',
+                    'verified' => !empty($u['emailVerified'])
+                ];
+            }
+        }
+
         // 1. Thử xác thực ID Token qua Google OAuth2 tokeninfo API
         $url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($token);
         $ch = curl_init($url);
