@@ -1,21 +1,12 @@
 <?php
-<<<<<<< HEAD
-=======
 // File: index.php
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
->>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-<<<<<<< HEAD
-// 1. Nhúng phần Header giao diện (thẻ head, css, thanh trạng thái, menu toggle)
-require_once __DIR__ . '/views/layout/header.php';
-
-// 2. Nhúng Sidebar điều hướng và Sub-panel tương tác
-=======
 // Lấy tham số điều hướng trên URL (mặc định là 'home' - Trang bản đồ)
 $route = $_GET['route'] ?? 'home';
 
@@ -88,7 +79,6 @@ switch ($route) {
 // GIAO DIỆN BẢN ĐỒ CHÍNH (Chỉ chạy khi $route là 'home')
 // =========================================================================
 require_once __DIR__ . '/views/layout/header.php';
->>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 require_once __DIR__ . '/views/layout/sidebar.php';
 ?>
 
@@ -98,9 +88,5 @@ require_once __DIR__ . '/views/layout/sidebar.php';
 </div>
 
 <?php
-<<<<<<< HEAD
-
-=======
->>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 require_once __DIR__ . '/views/layout/footer.php';
 ?>

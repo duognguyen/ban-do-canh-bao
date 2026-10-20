@@ -1,9 +1,6 @@
 <?php
-<<<<<<< HEAD
-=======
 // File: models/ReportModel.php
 // Chỉ làm việc với bảng `reports` và `report_votes`.
->>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
 class ReportModel {
     private $conn;
 
@@ -11,26 +8,6 @@ class ReportModel {
         $this->conn = $db;
     }
 
-<<<<<<< HEAD
-    public function getActiveReports() {
-    $sql = "SELECT r.*, 
-                   COALESCE(u.username, 'Ẩn danh') AS username, 
-                   COALESCE(u.reputation_score, 0) AS reputation_score 
-            FROM reports r 
-            LEFT JOIN users u ON r.user_id = u.id 
-            WHERE r.status = 'dang_dien_ra' 
-            ORDER BY r.created_at DESC";
-            
-    $result = $this->conn->query($sql);
-    
-    if ($result && $result->num_rows > 0) {
-        return $result->fetch_all(MYSQLI_ASSOC);
-    }
-    return [];
-    }
-}
-?>
-=======
     // Danh sách báo cáo đang diễn ra (kèm tên người báo + điểm uy tín)
     public function getActiveReports(?string $type = null): array {
         $sql = "SELECT r.*,
@@ -135,4 +112,3 @@ class ReportModel {
         }
     }
 }
->>>>>>> b529d5532351d06f7155cfae825f76215baafc4a
