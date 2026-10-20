@@ -7,7 +7,7 @@
             <button class="btn-control" onclick="zoomOutMap()" title="Thu nhỏ">
                 <i class="ph-bold ph-minus"></i>
             </button>
-            <button class="btn-control" onclick="locateUser(true)" title="Vị trí của bạn">
+            <button class="btn-control" onclick="locateUser(true, true)" title="Vị trí của bạn">
                 <i class="ph-bold ph-crosshair"></i>
             </button>
         </div>
@@ -26,7 +26,8 @@
         const currentUsername = <?= isset($_SESSION['username']) ? json_encode($_SESSION['username']) : 'null'; ?>;
     </script>
 
-    <!-- JS Bản đồ & Tương tác giao diện -->
+       <!-- API Client & JS Bản đồ -->
+    <script src="public/js/api.js"></script>
     <script src="public/js/map.js"></script>
 </body>
 </html>

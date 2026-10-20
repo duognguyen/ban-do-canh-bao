@@ -1,6 +1,12 @@
 <?php
 // File: models/UserModel.php
+// Quản lý dữ liệu người dùng, tokens và OTP
+
 class UserModel {
+    const STATUS_ACTIVE  = 'active';
+    const STATUS_BLOCKED = 'blocked';
+    const DEFAULT_REPUTATION = 10;
+
     private $conn;
 
     public function __construct($db)
@@ -8,53 +14,336 @@ class UserModel {
         $this->conn = $db;
     }
 
-    // 0. Kiểm tra username hoặc email đã tồn tại chưa (Tránh lỗi Fatal Error khi trùng)
+    // Kiểm tra username hoặc email đã tồn tại chưa
     public function checkExists($username, $email)
     {
         $sql = "SELECT username, email FROM users WHERE username = ? OR email = ? LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->bind_param("ss", $username, $email);
         $stmt->execute();
-        $result = $stmt->get_result();
-        return $result->fetch_assoc();
+        return $stmt->get_result()->fetch_assoc();
     }
 
-    // 1. Đăng ký tài khoản (Mặc định role là 'user')
+    // Kiểm tra riêng email đã tồn tại hay chưa (cho realtime check)
+    public function checkEmailExists(string $email): bool
+    {
+        $sql = "SELECT id FROM users WHERE email = ? LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        return (bool)$stmt->get_result()->fetch_assoc();
+    }
+
+    // Kiểm tra tên đăng nhập đã tồn tại chưa
+    public function checkUsernameExists(string $username): bool
+    {
+        $sql = "SELECT id FROM users WHERE username = ? LIMIT 1";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        return (bool)$stmt->get_result()->fetch_assoc();
+    }
+
+    public function findById($id)
+    {
+        $stmt = $this->conn->prepare(
+            "SELECT id, username, full_name, email, phone, role, status, reputation_score, created_at FROM users WHERE id = ? LIMIT 1"
+        );
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc() ?: null;
+    }
+
+    public function findByEmail(string $email)
+    {
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM users WHERE email = ? LIMIT 1"
+        );
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc() ?: null;
+    }
+
+    // Tìm kiếm bằng Email, Username hoặc Số điện thoại
+    public function findByAccount(string $account)
+    {
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM users WHERE username = ? OR email = ? OR phone = ? LIMIT 1"
+        );
+        $stmt->bind_param("sss", $account, $account, $account);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc() ?: null;
+    }
+
+    // Đăng ký tài khoản (hỗ trợ họ tên, sđt)
+    public function registerWithProfile(string $username, string $fullName, string $email, string $phone, string $password): int
+    {
+        $hashed = password_hash($password, PASSWORD_BCRYPT);
+        $stmt = $this->conn->prepare(
+            "INSERT INTO users(username, full_name, email, phone, password) VALUES (?, ?, ?, ?, ?)"
+        );
+        $stmt->bind_param("sssss", $username, $fullName, $email, $phone, $hashed);
+        $stmt->execute();
+        return (int)$this->conn->insert_id;
+    }
+
+    // Đăng ký cũ (tương thích ngược)
     public function register($username, $email, $password)
     {
-        $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-        $sql = "INSERT INTO users(username, email, password) VALUES (?, ?, ?)";
-
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("sss", $username, $email, $hashed_password);
-
+        $hashed = password_hash($password, PASSWORD_BCRYPT);
+        $stmt = $this->conn->prepare("INSERT INTO users(username, email, password) VALUES (?, ?, ?)");
+        $stmt->bind_param("sss", $username, $email, $hashed);
         return $stmt->execute();
     }
 
-    // 2. Đăng nhập (Trả về mảng thông tin user bao gồm cả cột role)
-    public function login($username_or_email, $password)
+    // Đăng nhập: hỗ trợ đăng nhập bằng Email, Username hoặc Số điện thoại
+    public function login($account, $password)
     {
-        $sql = "SELECT * FROM users WHERE username = ? OR email = ? LIMIT 1";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bind_param("ss", $username_or_email, $username_or_email);
-        $stmt->execute();
+        $user = $this->findByAccount($account);
+        if (!$user) {
+            return false;
+        }
 
-        $result = $stmt->get_result();
-        if ($user = $result->fetch_assoc()) {
-            // Hỗ trợ cả mật khẩu mã hóa BCRYPT và mật khẩu nhập trực tiếp trong phpMyAdmin
-            if (password_verify($password, $user['password']) || $password === $user['password']) {
-                return $user;
-            }
+        if (password_verify($password, $user['password'])) {
+            return $user;
+        }
+
+        // Hỗ trợ mật khẩu cũ chưa mã hóa
+        if (hash_equals((string)$user['password'], (string)$password)) {
+            $this->updatePassword((int)$user['id'], $password);
+            return $user;
         }
         return false;
     }
 
-    // 3. Trừ điểm uy tín (Không cho phép điểm âm dưới 0)
+    public function updatePassword($id, $plainPassword)
+    {
+        $hashed = password_hash($plainPassword, PASSWORD_BCRYPT);
+        $stmt = $this->conn->prepare("UPDATE users SET password = ? WHERE id = ?");
+        $stmt->bind_param("si", $hashed, $id);
+        return $stmt->execute();
+    }
+
+    public function listAll()
+    {
+        $result = $this->conn->query(
+            "SELECT id, username, full_name, email, phone, role, status, reputation_score, created_at FROM users ORDER BY id DESC"
+        );
+        return $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    }
+
+    // Đổi trạng thái: 'active' | 'blocked'. Khi mở khóa có thể khôi phục điểm uy tín.
+    public function setStatus($id, $status, $resetReputation = false)
+    {
+        if ($status === self::STATUS_ACTIVE && $resetReputation) {
+            $score = self::DEFAULT_REPUTATION;
+            $stmt = $this->conn->prepare("UPDATE users SET status = ?, reputation_score = ? WHERE id = ?");
+            $stmt->bind_param("sii", $status, $score, $id);
+        } else {
+            $stmt = $this->conn->prepare("UPDATE users SET status = ? WHERE id = ?");
+            $stmt->bind_param("si", $status, $id);
+        }
+        return $stmt->execute();
+    }
+
+    // Trừ điểm uy tín (không xuống dưới 0)
     public function deductReputation($user_id, $points = 1)
     {
-        $sql = "UPDATE users SET reputation_score = GREATEST(0, reputation_score - ?) WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
+        $stmt = $this->conn->prepare("UPDATE users SET reputation_score = GREATEST(0, reputation_score - ?) WHERE id = ?");
         $stmt->bind_param("ii", $points, $user_id);
         return $stmt->execute();
     }
+
+    // =========================================================================
+    // QUẢN LÝ MÃ OTP (Bảng `email_otps`)
+    // =========================================================================
+
+    public function createEmailOtp(string $email, string $otpCode, string $action, ?array $data = null, int $expiresMinutes = 15): bool
+    {
+        // Xóa các OTP cũ cùng loại của email này
+        $this->deleteEmailOtps($email, $action);
+
+        $jsonData = $data ? json_encode($data, JSON_UNESCAPED_UNICODE) : null;
+
+        $stmt = $this->conn->prepare(
+            "INSERT INTO email_otps (email, otp_code, action, data, expires_at) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))"
+        );
+        $stmt->bind_param("ssssi", $email, $otpCode, $action, $jsonData, $expiresMinutes);
+        return $stmt->execute();
+    }
+
+    public function getValidEmailOtp(string $email, string $action, string $otpCode): ?array
+    {
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM email_otps WHERE email = ? AND action = ? AND otp_code = ? AND expires_at > NOW() ORDER BY id DESC LIMIT 1"
+        );
+        $stmt->bind_param("sss", $email, $action, $otpCode);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        if ($row && !empty($row['data'])) {
+            $row['payload'] = json_decode($row['data'], true);
+        }
+        return $row ?: null;
+    }
+
+    public function deleteEmailOtps(string $email, string $action): bool
+    {
+        $stmt = $this->conn->prepare("DELETE FROM email_otps WHERE email = ? AND action = ?");
+        $stmt->bind_param("ss", $email, $action);
+        return $stmt->execute();
+    }
+
+    // =========================================================================
+    // QUẢN LÝ TOKEN (Bảng `user_tokens`) - Remember Me & Reset Password
+    // =========================================================================
+
+    public function createUserToken(int $userId, string $rawToken, string $type, int $expiresSeconds): bool
+    {
+        $tokenHash = hash('sha256', $rawToken);
+
+        // Nếu là remember_me, xóa token cũ cùng loại của user
+        if ($type === 'remember_me') {
+            $stmtDel = $this->conn->prepare("DELETE FROM user_tokens WHERE user_id = ? AND type = 'remember_me'");
+            $stmtDel->bind_param("i", $userId);
+            $stmtDel->execute();
+        }
+
+        $stmt = $this->conn->prepare(
+            "INSERT INTO user_tokens (user_id, token_hash, type, expires_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))"
+        );
+        $stmt->bind_param("issi", $userId, $tokenHash, $type, $expiresSeconds);
+        return $stmt->execute();
+    }
+
+    public function findUserByToken(string $rawToken, string $type): ?array
+    {
+        $tokenHash = hash('sha256', $rawToken);
+        $stmt = $this->conn->prepare(
+            "SELECT u.*, t.id as token_id, t.expires_at as token_expires_at 
+             FROM user_tokens t
+             JOIN users u ON u.id = t.user_id
+             WHERE t.token_hash = ? AND t.type = ? AND t.expires_at > NOW()
+             LIMIT 1"
+        );
+        $stmt->bind_param("ss", $tokenHash, $type);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc() ?: null;
+    }
+
+    public function deleteUserToken(string $rawToken, string $type): bool
+    {
+        $tokenHash = hash('sha256', $rawToken);
+        $stmt = $this->conn->prepare("DELETE FROM user_tokens WHERE token_hash = ? AND type = ?");
+        $stmt->bind_param("ss", $tokenHash, $type);
+        return $stmt->execute();
+    }
+
+    public function deleteTokensByUserId(int $userId, ?string $type = null): bool
+    {
+        if ($type) {
+            $stmt = $this->conn->prepare("DELETE FROM user_tokens WHERE user_id = ? AND type = ?");
+            $stmt->bind_param("is", $userId, $type);
+        } else {
+            $stmt = $this->conn->prepare("DELETE FROM user_tokens WHERE user_id = ?");
+            $stmt->bind_param("i", $userId);
+        }
+        return $stmt->execute();
+    }
+
+    // =========================================================================
+    // QUẢN LÝ MÃ OTP (Bảng `email_otps`)
+    // =========================================================================
+
+    public function createEmailOtp(string $email, string $otpCode, string $action, ?array $data = null, int $expiresMinutes = 15): bool
+    {
+        // Xóa các OTP cũ cùng loại của email này
+        $this->deleteEmailOtps($email, $action);
+
+        $jsonData = $data ? json_encode($data, JSON_UNESCAPED_UNICODE) : null;
+
+        $stmt = $this->conn->prepare(
+            "INSERT INTO email_otps (email, otp_code, action, data, expires_at) VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? MINUTE))"
+        );
+        $stmt->bind_param("ssssi", $email, $otpCode, $action, $jsonData, $expiresMinutes);
+        return $stmt->execute();
+    }
+
+    public function getValidEmailOtp(string $email, string $action, string $otpCode): ?array
+    {
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM email_otps WHERE email = ? AND action = ? AND otp_code = ? AND expires_at > NOW() ORDER BY id DESC LIMIT 1"
+        );
+        $stmt->bind_param("sss", $email, $action, $otpCode);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        if ($row && !empty($row['data'])) {
+            $row['payload'] = json_decode($row['data'], true);
+        }
+        return $row ?: null;
+    }
+
+    public function deleteEmailOtps(string $email, string $action): bool
+    {
+        $stmt = $this->conn->prepare("DELETE FROM email_otps WHERE email = ? AND action = ?");
+        $stmt->bind_param("ss", $email, $action);
+        return $stmt->execute();
+    }
+
+    // =========================================================================
+    // QUẢN LÝ TOKEN (Bảng `user_tokens`) - Remember Me & Reset Password
+    // =========================================================================
+
+    public function createUserToken(int $userId, string $rawToken, string $type, int $expiresSeconds): bool
+    {
+        $tokenHash = hash('sha256', $rawToken);
+
+        // Nếu là remember_me, xóa token cũ cùng loại của user
+        if ($type === 'remember_me') {
+            $stmtDel = $this->conn->prepare("DELETE FROM user_tokens WHERE user_id = ? AND type = 'remember_me'");
+            $stmtDel->bind_param("i", $userId);
+            $stmtDel->execute();
+        }
+
+        $stmt = $this->conn->prepare(
+            "INSERT INTO user_tokens (user_id, token_hash, type, expires_at) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))"
+        );
+        $stmt->bind_param("isssi", $userId, $tokenHash, $type, $expiresSeconds);
+        return $stmt->execute();
+    }
+
+    public function findUserByToken(string $rawToken, string $type): ?array
+    {
+        $tokenHash = hash('sha256', $rawToken);
+        $stmt = $this->conn->prepare(
+            "SELECT u.*, t.id as token_id, t.expires_at as token_expires_at 
+             FROM user_tokens t
+             JOIN users u ON u.id = t.user_id
+             WHERE t.token_hash = ? AND t.type = ? AND t.expires_at > NOW()
+             LIMIT 1"
+        );
+        $stmt->bind_param("ss", $tokenHash, $type);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc() ?: null;
+    }
+
+    public function deleteUserToken(string $rawToken, string $type): bool
+    {
+        $tokenHash = hash('sha256', $rawToken);
+        $stmt = $this->conn->prepare("DELETE FROM user_tokens WHERE token_hash = ? AND type = ?");
+        $stmt->bind_param("ss", $tokenHash, $type);
+        return $stmt->execute();
+    }
+
+    public function deleteTokensByUserId(int $userId, ?string $type = null): bool
+    {
+        if ($type) {
+            $stmt = $this->conn->prepare("DELETE FROM user_tokens WHERE user_id = ? AND type = ?");
+            $stmt->bind_param("is", $userId, $type);
+        } else {
+            $stmt = $this->conn->prepare("DELETE FROM user_tokens WHERE user_id = ?");
+            $stmt->bind_param("i", $userId);
+        }
+        return $stmt->execute();
+    }
 }
+

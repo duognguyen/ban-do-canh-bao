@@ -1,14 +1,24 @@
 <?php
 // File: index.php
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+require_once __DIR__ . '/config/db.php';
+require_once __DIR__ . '/config/auth.php';
+require_once __DIR__ . '/controllers/AuthController.php';
+
+// Khôi phục phiên tự động nếu có cookie Remember Me 30 ngày hợp lệ
+restore_remember_me_session();
 
 // Lấy tham số điều hướng trên URL (mặc định là 'home' - Trang bản đồ)
 $route = $_GET['route'] ?? 'home';
 
 switch ($route) {
-    // 1. TRANG ĐĂNG NHẬP (Cả Người dân & Admin)
+    // 1. TRANG ĐĂNG NHẬP
     case 'login':
     case 'admin_login':
         if (isset($_SESSION['user_id'])) {
@@ -18,7 +28,11 @@ switch ($route) {
             header("Location: $redirect");
             exit;
         }
-        require_once __DIR__ . '/views/auth/login.php';
+        if (file_exists(__DIR__ . '/views/auth/login.php')) {
+            require_once __DIR__ . '/views/auth/login.php';
+        } else {
+            header('Location: index.php?route=home');
+        }
         exit;
 
     // 2. TRANG ĐĂNG KÝ
@@ -27,25 +41,42 @@ switch ($route) {
             header('Location: index.php?route=home');
             exit;
         }
-        require_once __DIR__ . '/views/auth/register.php';
-        exit;
-
-    // 3. ĐĂNG XUẤT (Đã cấu hình chuyển hướng an toàn tuyệt đối)
-    case 'logout':
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        $_SESSION = [];
-        session_destroy();
-        
-        if (file_exists(__DIR__ . '/api/logout.php')) {
-            require_once __DIR__ . '/api/logout.php';
+        if (file_exists(__DIR__ . '/views/auth/register.php')) {
+            require_once __DIR__ . '/views/auth/register.php';
         } else {
             header('Location: index.php?route=home');
         }
         exit;
 
-    // 4. TRANG QUẢN TRỊ VIÊN (ADMIN DASHBOARD)
+    // 3. QUÊN MẬT KHẨU
+    case 'forgot_password':
+        if (isset($_SESSION['user_id'])) {
+            header('Location: index.php?route=home');
+            exit;
+        }
+        if (file_exists(__DIR__ . '/views/auth/forgot_password.php')) {
+            require_once __DIR__ . '/views/auth/forgot_password.php';
+        } else {
+            header('Location: index.php?route=home');
+        }
+        exit;
+
+    // 4. ĐẶT LẠI MẬT KHẨU
+    case 'reset_password':
+        if (file_exists(__DIR__ . '/views/auth/reset_password.php')) {
+            require_once __DIR__ . '/views/auth/reset_password.php';
+        } else {
+            header('Location: index.php?route=home');
+        }
+        exit;
+
+    // 5. ĐĂNG XUẤT (Xóa sạch session, token DB & cookie)
+    case 'logout':
+        (new AuthController($conn))->logout();
+        header('Location: index.php?route=home');
+        exit;
+
+    // 6. TRANG QUẢN TRỊ VIÊN (ADMIN DASHBOARD)
     case 'admin_dashboard':
     case 'admin':
         if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
@@ -53,35 +84,14 @@ switch ($route) {
             exit;
         }
         
-        if (file_exists(__DIR__ . '/controllers/AdminController.php')) {
-            require_once __DIR__ . '/controllers/AdminController.php';
-            $admin = new AdminController();
-            if (method_exists($admin, 'dashboard')) {
-                $admin->dashboard();
-            } else {
-                $admin->index();
-            }
+        if (file_exists(__DIR__ . '/views/admin/dashboard.php')) {
+            require_once __DIR__ . '/views/admin/dashboard.php';
         } else {
-            echo "<h2>Lỗi: Không tìm thấy AdminController.</h2>";
+            echo "<h2>Lỗi: Không tìm thấy giao diện Admin Dashboard.</h2>";
         }
         exit;
 
-    // 5. XỬ LÝ CẬP NHẬT TRẠNG THÁI USER TỪ ADMIN
-    case 'admin_update_status':
-        if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-            header('Location: index.php?route=admin_login');
-            exit;
-        }
-        if (file_exists(__DIR__ . '/controllers/AdminController.php')) {
-            require_once __DIR__ . '/controllers/AdminController.php';
-            $admin = new AdminController();
-            if (method_exists($admin, 'updateUserStatus')) {
-                $admin->updateUserStatus();
-            }
-        }
-        exit;
-
-    // 6. MẶC ĐỊNH: HIỂN THỊ BẢN ĐỒ CÔNG CỘNG
+    // 7. MẶC ĐỊNH: HIỂN THỊ BẢN ĐỒ CÔNG CỘNG
     case 'home':
     default:
         break;
@@ -101,4 +111,6 @@ require_once __DIR__ . '/views/layout/sidebar.php';
 
 <?php
 require_once __DIR__ . '/views/layout/footer.php';
+?>
+
 ?>

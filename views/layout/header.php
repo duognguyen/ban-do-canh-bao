@@ -57,3 +57,22 @@ if (session_status() === PHP_SESSION_NONE) {
             </div>
         </div>
     </div>
+
+    <!-- Thông báo kết quả từ PHP (Flash Message) -->
+    <?php if (!empty($_SESSION['flash_success'])): ?>
+        <div style="position: fixed; top: 75px; left: 50%; transform: translateX(-50%); z-index: 9999; background: #059669; color: white; padding: 12px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 500; cursor: pointer;" onclick="this.remove()">
+            <i class="ph-bold ph-check-circle" style="font-size: 1.2rem;"></i>
+            <span><?= htmlspecialchars($_SESSION['flash_success']) ?></span>
+            <i class="ph ph-x" style="margin-left: 10px; opacity: 0.7;"></i>
+        </div>
+        <?php unset($_SESSION['flash_success']); ?>
+    <?php endif; ?>
+
+    <?php if (!empty($_SESSION['flash_error'])): ?>
+        <div style="position: fixed; top: 75px; left: 50%; transform: translateX(-50%); z-index: 9999; background: #dc2626; color: white; padding: 12px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 8px; font-size: 0.95rem; font-weight: 500; cursor: pointer;" onclick="this.remove()">
+            <i class="ph-bold ph-warning-circle" style="font-size: 1.2rem;"></i>
+            <span><?= htmlspecialchars($_SESSION['flash_error']) ?></span>
+            <i class="ph ph-x" style="margin-left: 10px; opacity: 0.7;"></i>
+        </div>
+        <?php unset($_SESSION['flash_error']); ?>
+    <?php endif; ?>
