@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-<!-- LỚP PHỦ MỜ KHI MỞ SIDEBAR -->
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-=======
 <!-- KHUNG THANH ĐIỀU HƯỚNG BÊN TRÁI (Bản đồ luôn sáng rõ 100%, không bị lớp mờ che) -->
->>>>>>> origin/NgoTanThien
 
 <!-- KHUNG THANH ĐIỀU HƯỚNG BÊN TRÁI -->
 <div class="sidebar" id="sidebar">
@@ -23,11 +18,6 @@
                 <i class="ph ph-x"></i>
             </button>
         </div>
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> origin/NgoTanThien
         <div class="sidebar-menu">
             <a href="#" class="menu-item" onclick="openSubPanel('Chú giải biểu tượng', 'legend')">
                 <i class="ph ph-list-dashes"></i>
@@ -42,15 +32,9 @@
                 <span>Theo dõi</span>
             </a>
         </div>
-<<<<<<< HEAD
-        
-        <div class="sidebar-divider"></div>
-        
-=======
 
         <div class="sidebar-divider"></div>
 
->>>>>>> origin/NgoTanThien
         <div class="sidebar-links">
             <a href="#" onclick="openSubPanel('Góp ý xây dựng', 'feedback')">
                 <i class="ph ph-chat-teardrop-dots"></i> Góp ý
@@ -62,11 +46,6 @@
                 <i class="ph ph-sparkle"></i> Cập nhật mới
             </a>
         </div>
-<<<<<<< HEAD
-        
-=======
-
->>>>>>> origin/NgoTanThien
         <div class="sidebar-divider"></div>
 
         <!-- Phần thông tin tài khoản ở chân Sidebar -->
@@ -79,14 +58,6 @@
                         <span style="background: #3b82f6; color: white; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">Admin</span>
                     <?php endif; ?>
                 </div>
-<<<<<<< HEAD
-                <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
-                    <a href="views/admin/dashboard.php" style="color: #60a5fa; font-weight: 600; font-size: 0.95rem; text-decoration: none;">
-                        <i class="ph-bold ph-shield-check" style="margin-right: 8px;"></i> Quản trị Admin
-                    </a>
-                <?php endif; ?>
-                <a href="api/logout.php" style="color: #ef4444; font-weight: 600; font-size: 0.95rem; text-decoration: none;">
-=======
                 
                 <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
                       <a href="index.php?route=admin_login" style="color: #94a3b8; font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 6px; margin-top: 4px;">
@@ -97,7 +68,6 @@
                 
                 <!-- Nút Đăng xuất trỏ thẳng qua Router index.php?route=logout để xử lý mượt mà -->
                 <a href="index.php?route=logout" onclick="localStorage.removeItem('currentUser');" style="color: #ef4444; font-weight: 600; font-size: 0.95rem; text-decoration: none; cursor: pointer;">
->>>>>>> origin/NgoTanThien
                     <i class="ph-bold ph-sign-out" style="margin-right: 8px;"></i> Đăng xuất
                 </a>
             <?php else: ?>
@@ -123,9 +93,6 @@
             <!-- Nội dung động được render bằng JavaScript -->
         </div>
     </div>
-<<<<<<< HEAD
-</div>
-=======
 
     <!-- 3. Khung Báo Cáo Sự Cố Bằng PHP Form Thuần (Gửi qua POST) -->
     <div id="sidebar-report" style="display: none; flex-direction: column; height: 100%;">
@@ -208,4 +175,3 @@
         </div>
     </div>
 </div>
->>>>>>> origin/NgoTanThien

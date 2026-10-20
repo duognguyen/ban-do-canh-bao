@@ -57,8 +57,6 @@ if (session_status() === PHP_SESSION_NONE) {
             </div>
         </div>
     </div>
-<<<<<<< HEAD
-=======
 
     <!-- Thông báo kết quả từ PHP (Flash Message) -->
     <?php if (!empty($_SESSION['flash_success'])): ?>
@@ -78,4 +76,3 @@ if (session_status() === PHP_SESSION_NONE) {
         </div>
         <?php unset($_SESSION['flash_error']); ?>
     <?php endif; ?>
->>>>>>> origin/NgoTanThien
