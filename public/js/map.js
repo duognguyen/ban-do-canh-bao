@@ -275,8 +275,13 @@ function openSidebarNews() {
 }
 
 function closeSubPanel() {
-    document.getElementById('sidebar-main').style.display = 'flex';
-    document.getElementById('sidebar-sub').style.display = 'none';
+    const main = document.getElementById('sidebar-main');
+    const sub = document.getElementById('sidebar-sub');
+    const rep = document.getElementById('sidebar-report');
+
+    if (sub) sub.style.display = 'none';
+    if (rep) rep.style.display = 'none';
+    if (main) main.style.display = 'flex';
 }
 
 function openReportPanel() {
@@ -383,8 +388,13 @@ function showToast(message, isSuccess = true) {
 
 // 10. Chuyển đổi và Render nội dung Sub-panel
 function openSubPanel(title, type) {
-    document.getElementById('sidebar-main').style.display = 'none';
-    document.getElementById('sidebar-sub').style.display = 'flex';
+    const main = document.getElementById('sidebar-main');
+    const sub = document.getElementById('sidebar-sub');
+    const rep = document.getElementById('sidebar-report');
+
+    if (main) main.style.display = 'none';
+    if (rep) rep.style.display = 'none'; // <--- Ẩn khung "Yêu cầu đăng nhập / Báo sự cố"
+    if (sub) sub.style.display = 'flex';
     document.getElementById('sub-title').innerText = title;
 
     const contentDiv = document.getElementById('sub-content');
