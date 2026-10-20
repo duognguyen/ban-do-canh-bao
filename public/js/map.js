@@ -402,7 +402,7 @@ function openSubPanel(title, type, extraData = {}) {
     const rep = document.getElementById('sidebar-report');
 
     if (main) main.style.display = 'none';
-    if (rep) rep.style.display = 'none';
+    if (rep) rep.style.display = 'none'; // Ẩn khung "Yêu cầu đăng nhập / Báo sự cố"
     if (sub) sub.style.display = 'flex';
     document.getElementById('sub-title').innerText = title;
 

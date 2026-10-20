@@ -100,7 +100,7 @@
             <button type="button" class="btn-close-sidebar" onclick="closeReportPanel()" title="Quay lại">
                 <i class="ph ph-caret-left"></i>
             </button>
-            <h3 style="color: white; font-size: 1.05rem; flex: 1;">Báo sự cố tại điểm này</h3>
+            <h3 style="color: white; font-size: 1.05rem; flex: 1;">Báo sự cố tại điểm nà</h3>
             <button type="button" class="btn-close-sidebar" onclick="closeReportPanel()" title="Đóng sidebar">
                 <i class="ph ph-x"></i>
             </button>
