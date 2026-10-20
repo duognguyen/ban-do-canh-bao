@@ -1,69 +1,41 @@
 <?php
 // File: controllers/AdminController.php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-require_once __DIR__ . '/../config/db.php';
+// Nghiệp vụ quản trị. KHÔNG echo / redirect / render view (view lấy dữ liệu qua API).
+require_once __DIR__ . '/../models/UserModel.php';
 
 class AdminController {
-    private $conn;
+    private $users;
 
-    public function __construct() {
-        global $conn;
-        if (!isset($conn) || $conn === null) {
-            die("<h3 style='color: red; font-family: sans-serif;'>Lỗi kết nối cơ sở dữ liệu!</h3>");
-        }
-        $this->conn = $conn;
-        
-        // Kiểm tra quyền Admin bảo mật tuyệt đối
-        if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-            header('Location: index.php?route=admin_login');
-            exit;
-        }
+    public function __construct(mysqli $conn) {
+        $this->users = new UserModel($conn);
     }
 
-    public function index() {
-        $this->dashboard();
+    public function listUsers(): array {
+        return ['ok' => true, 'data' => $this->users->listAll()];
     }
 
-    public function dashboard() {
-        // Lấy danh sách toàn bộ user an toàn
-        $users = [];
-        $sql = "SELECT id, username, email, role, reputation_score, status FROM users ORDER BY id DESC";
-        $result = $this->conn->query($sql);
-        
-        if ($result && $result->num_rows > 0) {
-            $users = $result->fetch_all(MYSQLI_ASSOC);
+    // action: 'block' | 'unblock'
+    public function updateUserStatus(int $adminId, array $in): array {
+        $userId = (int)($in['user_id'] ?? 0);
+        $action = $in['action'] ?? '';
+
+        if ($userId <= 0 || !in_array($action, ['block', 'unblock'], true)) {
+            return ['ok' => false, 'error' => 'Dữ liệu không hợp lệ', 'code' => 422];
         }
-        
-        // --- SỬA THÀNH ĐOẠN NÀY ĐỂ TRÁNH LỆCH ĐƯỜNG DẪN ---
-        $viewPath = $_SERVER['DOCUMENT_ROOT'] . '/ban-do-canh-bao/views/admin/dashboard.php';
-        if (file_exists($viewPath)) {
-            require_once $viewPath;
+        if ($userId === $adminId) {
+            return ['ok' => false, 'error' => 'Bạn không thể thay đổi trạng thái tài khoản của chính mình', 'code' => 403];
+        }
+        if (!$this->users->findById($userId)) {
+            return ['ok' => false, 'error' => 'Người dùng không tồn tại', 'code' => 404];
+        }
+
+        if ($action === 'block') {
+            $this->users->setStatus($userId, UserModel::STATUS_BLOCKED);
+            $message = 'Đã khóa tài khoản';
         } else {
-            // Fallback nếu chạy trên hosting hoặc thư mục gốc khác
-            require_once __DIR__ . '/../views/admin/dashboard.php';
+            $this->users->setStatus($userId, UserModel::STATUS_ACTIVE, true); // khôi phục điểm uy tín
+            $message = 'Đã mở khóa và khôi phục tài khoản';
         }
-        exit;
-    }
-
-    public function updateUserStatus() {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $user_id = (int)($_POST['user_id'] ?? 0);
-            $action = $_POST['action'] ?? ''; // 'block' hoặc 'reset_reputation'
-
-            if ($action === 'block') {
-                $stmt = $this->conn->prepare("UPDATE users SET status = 0 WHERE id = ?");
-                $stmt->bind_param("i", $user_id);
-                $stmt->execute();
-            } elseif ($action === 'reset_reputation') {
-                $stmt = $this->conn->prepare("UPDATE users SET reputation_score = 100, status = 1 WHERE id = ?");
-                $stmt->bind_param("i", $user_id);
-                $stmt->execute();
-            }
-            header('Location: index.php?route=admin_dashboard');
-            exit;
-        }
+        return ['ok' => true, 'message' => $message, 'data' => $this->users->findById($userId)];
     }
 }

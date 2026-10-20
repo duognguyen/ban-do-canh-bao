@@ -132,22 +132,17 @@ map.on('click', function(e) {
     openReportPanel();
 });
 
-// 6. Tải dữ liệu các điểm cảnh báo từ máy chủ
+// 6. Tải dữ liệu các điểm cảnh báo từ API máy chủ
 async function loadReports() {
     try {
-        const res = await fetch('api/get_reports.php');
-        const json = await res.json();
-        if (json.status === 'success' && Array.isArray(json.data)) {
-            window.currentReports = json.data;
-            renderMarkers(json.data); // Vẽ các điểm (bao gồm cả các điểm ở Nha Trang) lên bản đồ
-        } else {
-            renderMarkers([]);
-        }
+        const reports = await Api.reports(window.currentFilter || 'all');
+        window.currentReports = Array.isArray(reports) ? reports : [];
+        renderMarkers(window.currentReports);
     } catch (e) {
-        console.warn("Lỗi tải API get_reports.php:", e);
+        console.warn("Lỗi tải API reports:", e.message);
+        renderMarkers([]);
     }
 }
-
 // 7. Render danh sách Markers lên bản đồ
 function renderMarkers(reports) {
     markersLayer.clearLayers();
@@ -321,7 +316,7 @@ function openReportSheet() {
     }
 }
 
-// Xử lý gửi báo cáo ngầm (Hoàn toàn KHÔNG reload lại trang web)
+// Xử lý gửi báo cáo ngầm qua API (Hoàn toàn KHÔNG reload trang)
 async function handleReportFormSubmit(e) {
     if (e) e.preventDefault();
 
@@ -336,29 +331,16 @@ async function handleReportFormSubmit(e) {
     }
 
     const formData = new FormData(form);
-    formData.append('ajax', '1');
 
     try {
-        const res = await fetch('index.php?route=report_add', {
-            method: 'POST',
-            body: formData,
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        const data = await res.json();
-
-        if (data.status === 'success') {
-            showToast(data.message || "Gửi báo cáo sự cố thành công!", true);
-            closeReportPanel();
-            form.reset();
-            // Vẽ lại điểm mới ngay trên bản đồ
-            loadReports();
-        } else {
-            showToast(data.message || "Không thể gửi báo cáo!", false);
-        }
-    } catch (err) {
-        showToast("Đã lưu báo cáo thành công!", true);
+        await Api.addReport(formData);
+        showToast("Gửi báo cáo sự cố thành công!", true);
         closeReportPanel();
-        loadReports();
+        form.reset();
+        // Cập nhật ngay điểm mới lên bản đồ
+        await loadReports();
+    } catch (err) {
+        showToast(err.message || "Không thể gửi báo cáo!", false);
     }
 }
 
@@ -789,41 +771,7 @@ function focusMarker(lat, lng) {
     }, 600);
 }
 
-// 12. Gửi báo cáo sự cố lên máy chủ
-async function handleReportSubmit(e) {
-    e.preventDefault();
-    const lat = document.getElementById('report_lat').value;
-    const lng = document.getElementById('report_lng').value;
-
-    if (!lat || !lng) {
-        alert("Vui lòng chạm lên bản đồ để chọn vị trí sự cố hoặc bấm 'Vị trí hiện tại'!");
-        return;
-    }
-
-    const form = document.getElementById('reportForm');
-    const formData = new FormData(form);
-
-    try {
-        const res = await fetch('api/add_report.php', { method: 'POST', body: formData });
-        const json = await res.json();
-        if (json.status === 'success') {
-            alert("Báo cáo của bạn đã được gửi thành công!");
-            closeSubPanel();
-            form.reset();
-            loadReports();
-        } else {
-            alert("Thông báo: " + (json.message || "Gửi thành công"));
-            closeSubPanel();
-            loadReports();
-        }
-    } catch (err) {
-        alert("Báo cáo của bạn đã được tiếp nhận!");
-        closeSubPanel();
-        loadReports();
-    }
-}
-
-// 13. Bình chọn / Xác nhận điểm sự cố
+// 13. Bình chọn / Xác nhận điểm sự cố qua API
 async function voteReport(id, type) {
     if (!isLoggedIn) {
         alert("Vui lòng đăng nhập để bình chọn xác nhận thông tin!");
@@ -835,48 +783,33 @@ async function voteReport(id, type) {
         return;
     }
 
-    const fd = new FormData();
-    fd.append('report_id', id);
-    fd.append('vote_type', type);
-
     try {
-        const res = await fetch('api/vote_report.php', { method: 'POST', body: fd });
-        const json = await res.json();
-        if (json.status === 'error') {
-            alert(json.message);
-        } else {
-            loadReports();
-        }
-    } catch (e) {
-        console.warn("Lỗi gửi bình chọn:", e);
+        const res = await Api.vote(id, type);
+        showToast("Đã ghi nhận bình chọn của bạn!", true);
+        // Tải lại dữ liệu để cập nhật số vote trên popup bản đồ
+        await loadReports();
+    } catch (err) {
+        showToast(err.message || "Lỗi gửi bình chọn!", false);
     }
 }
 
 // 14. Xử lý Đăng nhập tài khoản
+// 14. Xử lý Đăng nhập tài khoản qua API
 async function handleAuthLogin(e) {
     e.preventDefault();
     const u = document.getElementById('loginUsername').value;
     const p = document.getElementById('loginPassword').value;
 
-    const fd = new FormData();
-    fd.append('username_or_email', u);
-    fd.append('password', p);
-
     try {
-        const res = await fetch('api/login.php', { method: 'POST', body: fd });
-        const json = await res.json();
-        if (json.status === 'success') {
-            alert(json.message || "Đăng nhập thành công!");
-            window.location.reload();
-        } else {
-            alert(json.message || "Đăng nhập thất bại");
-        }
+        const res = await Api.login(u, p);
+        showToast("Đăng nhập thành công!", true);
+        setTimeout(() => window.location.reload(), 600);
     } catch (err) {
-        alert("Lỗi kết nối máy chủ");
+        showToast(err.message || "Đăng nhập thất bại!", false);
     }
 }
 
-// 15. Xử lý Đăng ký tài khoản
+// 15. Xử lý Đăng ký tài khoản qua API
 async function handleAuthRegister(e) {
     e.preventDefault();
     const u = document.getElementById('regUsername').value;
@@ -885,26 +818,16 @@ async function handleAuthRegister(e) {
     const cp = document.getElementById('regConfirmPassword').value;
 
     if (p !== cp) {
-        alert("Mật khẩu xác nhận không khớp!");
+        showToast("Mật khẩu xác nhận không khớp!", false);
         return;
     }
 
-    const fd = new FormData();
-    fd.append('username', u);
-    fd.append('email', em);
-    fd.append('password', p);
-
     try {
-        const res = await fetch('api/register.php', { method: 'POST', body: fd });
-        const json = await res.json();
-        if (json.status === 'success') {
-            alert(json.message || "Đăng ký thành công!");
-            window.location.reload();
-        } else {
-            alert(json.message || "Đăng ký thất bại");
-        }
+        await Api.register({ username: u, email: em, password: p, confirm_password: cp });
+        showToast("Đăng ký thành công! Đang chuyển hướng...", true);
+        setTimeout(() => window.location.reload(), 800);
     } catch (err) {
-        alert("Lỗi kết nối máy chủ");
+        showToast(err.message || "Đăng ký thất bại!", false);
     }
 }
 

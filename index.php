@@ -41,64 +41,34 @@ switch ($route) {
         }
         exit;
 
-    // 3. ĐĂNG XUẤT (Đã cấu hình chuyển hướng an toàn tuyệt đối)
+        // 3. ĐĂNG XUẤT (Xóa session sạch sẽ và chuyển hướng về trang chủ)
     case 'logout':
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
         $_SESSION = [];
-        session_destroy();
-        
-        if (file_exists(__DIR__ . '/api/logout.php')) {
-            require_once __DIR__ . '/api/logout.php';
-        } else {
-            header('Location: index.php?route=home');
+        if (ini_get('session.use_cookies')) {
+            $p = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 3600, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
         }
+        session_destroy();
+        header('Location: index.php?route=home');
         exit;
-
     // 4. TRANG QUẢN TRỊ VIÊN (ADMIN DASHBOARD)
+        // 4. TRANG QUẢN TRỊ VIÊN (ADMIN DASHBOARD)
     case 'admin_dashboard':
     case 'admin':
         if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-            header('Location: index.php?route=admin_login');
+            header('Location: index.php?route=home');
             exit;
         }
         
-        if (file_exists(__DIR__ . '/controllers/AdminController.php')) {
-            require_once __DIR__ . '/controllers/AdminController.php';
-            $admin = new AdminController();
-            if (method_exists($admin, 'dashboard')) {
-                $admin->dashboard();
-            } elseif (method_exists($admin, 'index')) {
-                $admin->index();
-            }
+        if (file_exists(__DIR__ . '/views/admin/dashboard.php')) {
+            require_once __DIR__ . '/views/admin/dashboard.php';
         } else {
-            echo "<h2>Lỗi: Không tìm thấy AdminController.</h2>";
+            echo "<h2>Lỗi: Không tìm thấy giao diện Admin Dashboard.</h2>";
         }
         exit;
-
-    // 5. XỬ LÝ CẬP NHẬT TRẠNG THÁI USER TỪ ADMIN
-    case 'admin_update_status':
-        if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
-            header('Location: index.php?route=admin_login');
-            exit;
-        }
-        if (file_exists(__DIR__ . '/controllers/AdminController.php')) {
-            require_once __DIR__ . '/controllers/AdminController.php';
-            $admin = new AdminController();
-            if (method_exists($admin, 'updateUserStatus')) {
-                $admin->updateUserStatus();
-            }
-        }
-        exit;
-
-    // 6. XỬ LÝ THÊM BÁO CÁO SỰ CỐ (PHP CONTROLLER)
-    case 'report_add':
-        require_once __DIR__ . '/controllers/ReportController.php';
-        $reportCtrl = new ReportController();
-        $reportCtrl->add();
-        exit;
-
     // 7. MẶC ĐỊNH: HIỂN THỊ BẢN ĐỒ CÔNG CỘNG
     case 'home':
     default:

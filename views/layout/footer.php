@@ -26,7 +26,8 @@
         const currentUsername = <?= isset($_SESSION['username']) ? json_encode($_SESSION['username']) : 'null'; ?>;
     </script>
 
-    <!-- JS Bản đồ & Tương tác giao diện -->
+       <!-- API Client & JS Bản đồ -->
+    <script src="public/js/api.js"></script>
     <script src="public/js/map.js"></script>
 </body>
 </html>

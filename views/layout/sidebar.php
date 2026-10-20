@@ -132,9 +132,9 @@
                     <div>
                         <label style="color: #a1a1aa; font-size: 0.85rem; margin-bottom: 6px; display: block; font-weight: 500;">Mức độ nghiêm trọng:</label>
                         <select name="severity" class="form-input" style="color: white; background: #27272a; width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #3f3f46;" required>
-                            <option value="nhe">Nhẹ (Mắt cá <20cm / Ùn nhẹ)</option>
-                            <option value="vua" selected>Vừa (Đến đầu gối / Kẹt xe)</option>
-                            <option value="nghiem_trong">Nghiêm trọng (Bánh xe / Tắc hoàn toàn)</option>
+                            <option value="nhe">Nhẹ </option>
+                            <option value="vua" selected>Vừa </option>
+                            <option value="nghiem_trong">Nghiêm trọng</option>
                         </select>
                     </div>
 
