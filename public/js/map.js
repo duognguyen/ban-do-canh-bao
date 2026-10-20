@@ -20,6 +20,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
 // Lớp chứa các điểm sự cố và lớp người dùng
 const markersLayer = L.layerGroup().addTo(map);
 let userMarker = null;
+let selectedMarker = null; // Điểm ghim khi người dùng bấm chọn vị trí trên bản đồ
 let userCircle = null; // Vòng tròn bán kính an toàn quanh người dùng
 window.currentReports = [];
 window.currentFilter = 'all'; // 'all', 'ngap_nuoc', 'ket_xe'
@@ -80,7 +81,9 @@ function updateUserRadiusCircle(lat, lng) {
             fillColor: '#38bdf8',
             fillOpacity: 0.08,
             weight: 1.5,
-            dashArray: '6, 6'
+            dashArray: '6, 6',
+            interactive: false, // BẮT BUỘC: Cho phép click xuyên qua để người dùng chấm điểm báo cáo trên bản đồ
+            className: 'radar-circle'
         }).addTo(map);
     }
 }
@@ -166,22 +169,22 @@ map.on('click', function(e) {
         addressInput.value = `Điểm chọn trên bản đồ [${lat}, ${lng}]`;
     }
 
-    if (userMarker) map.removeLayer(userMarker);
+    if (selectedMarker) map.removeLayer(selectedMarker);
 
     const pinIcon = L.divIcon({
-        className: 'custom-pin',
+        className: 'custom-pin-selected',
         html: `
-            <div style="width:24px; height:24px; background:#0284c7; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2px solid white; box-shadow:0 2px 6px rgba(0,0,0,0.4); position:relative;">
+            <div style="width:26px; height:26px; background:#ef4444; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2.5px solid white; box-shadow:0 3px 10px rgba(0,0,0,0.45); position:relative;">
                 <div style="width:8px; height:8px; background:white; border-radius:50%; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);"></div>
             </div>
         `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 24]
+        iconSize: [26, 26],
+        iconAnchor: [13, 26]
     });
 
-    userMarker = L.marker([lat, lng], { icon: pinIcon })
+    selectedMarker = L.marker([lat, lng], { icon: pinIcon })
         .addTo(map)
-        .bindPopup("📍 Vị trí bạn đã chọn: " + lat + ", " + lng)
+        .bindPopup("<b style='color:#ef4444;'>📍 Vị trí bạn đã chọn:</b><br>" + lat + ", " + lng)
         .openPopup();
 
     // Mở khung form báo cáo (xử lý bằng PHP thuần)
@@ -368,6 +371,12 @@ function closeReportPanel() {
     if (main) main.style.display = 'flex';
     if (sidebar) sidebar.classList.remove('open');
     if (overlay) overlay.classList.remove('active');
+
+    // Xóa điểm ghim đã chọn nếu người dùng hủy đóng form
+    if (selectedMarker) {
+        map.removeLayer(selectedMarker);
+        selectedMarker = null;
+    }
 }
 
 function openReportSheet() {
@@ -910,8 +919,10 @@ function focusMarker(lat, lng) {
     if (isNaN(lat) || isNaN(lng)) return;
     map.flyTo([lat, lng], 17, { animate: true, duration: 1.2 });
     closeSubPanel();
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sidebarOverlay').classList.remove('active');
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.remove('open');
+    const overlay = document.getElementById('sidebarOverlay');
+    if (overlay) overlay.classList.remove('active');
 
     setTimeout(() => {
         markersLayer.eachLayer(layer => {

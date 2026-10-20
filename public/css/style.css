@@ -657,3 +657,10 @@ body, html {
     margin: 12px 14px;
     line-height: 1.5;
 }
+
+/* Đảm bảo vòng radar không bao giờ cản trở thao tác click / chạm / chấm điểm trên bản đồ */
+.radar-circle,
+svg.leaflet-zoom-animated path.radar-circle,
+path[stroke="#0284c7"] {
+    pointer-events: none !important;
+}
