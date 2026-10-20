@@ -7,7 +7,11 @@
             <button class="btn-control" onclick="zoomOutMap()" title="Thu nhỏ">
                 <i class="ph-bold ph-minus"></i>
             </button>
+<<<<<<< HEAD
             <button class="btn-control" onclick="locateUser(true)" title="Vị trí của bạn">
+=======
+            <button class="btn-control" onclick="locateUser(true, true)" title="Vị trí của bạn">
+>>>>>>> origin/NgoTanThien
                 <i class="ph-bold ph-crosshair"></i>
             </button>
         </div>

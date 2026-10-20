@@ -276,21 +276,10 @@ body, html {
     transform: scale(0.96);
 }
 
-/* 4. SIDEBAR CHÍNH VÀ CÁC SUB-PANEL */
+/* 4. SIDEBAR CHÍNH VÀ CÁC SUB-PANEL (Đã tắt hoàn toàn lớp phủ mờ để bản đồ luôn sáng rõ 100%) */
 .sidebar-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(2px);
-    z-index: 2000;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-.sidebar-overlay.active {
-    opacity: 1;
-    visibility: visible;
+    display: none !important;
+    pointer-events: none !important;
 }
 
 .sidebar {
