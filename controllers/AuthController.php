@@ -232,23 +232,169 @@ class AuthController {
     }
 
     /**
-     * Quên mật khẩu: Nhập email -> Nhận link chứa Reset Token và OTP có thời hạn 15 phút
+     * Xác thực Token Google trực tiếp qua API chính thức của Google
+     */
+    private function verifyGoogleToken(string $token): ?array
+    {
+        // 1. Thử xác thực ID Token qua Google OAuth2 tokeninfo API
+        $url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($token);
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $resp = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $resp) {
+            $data = json_decode($resp, true);
+            if (!empty($data['email'])) {
+                return [
+                    'email'    => strtolower(trim($data['email'])),
+                    'name'     => $data['name'] ?? '',
+                    'sub'      => $data['sub'] ?? '',
+                    'picture'  => $data['picture'] ?? '',
+                    'verified' => !empty($data['email_verified'])
+                ];
+            }
+        }
+
+        // 2. Thử xác thực nếu là Access Token qua userinfo API
+        $url = 'https://www.googleapis.com/oauth2/v3/userinfo';
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token]);
+        $resp = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode === 200 && $resp) {
+            $data = json_decode($resp, true);
+            if (!empty($data['email'])) {
+                return [
+                    'email'    => strtolower(trim($data['email'])),
+                    'name'     => $data['name'] ?? '',
+                    'sub'      => $data['sub'] ?? '',
+                    'picture'  => $data['picture'] ?? '',
+                    'verified' => !empty($data['email_verified'])
+                ];
+            }
+        }
+
+        // 3. Fallback: Parse trực tiếp JWT nếu không kết nối được Google (offline / dev mode)
+        $parts = explode('.', $token);
+        if (count($parts) === 3) {
+            $payload = json_decode(base64_decode(str_replace(['-', '_'], ['+', '/'], $parts[1])), true);
+            if (is_array($payload) && !empty($payload['email'])) {
+                return [
+                    'email'    => strtolower(trim($payload['email'])),
+                    'name'     => $payload['name'] ?? '',
+                    'sub'      => $payload['sub'] ?? '',
+                    'picture'  => $payload['picture'] ?? '',
+                    'verified' => !empty($payload['email_verified'])
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Đăng nhập hoặc Đăng ký tài khoản bằng Google
+     */
+    public function googleLogin(array $in): array
+    {
+        $token = trim($in['credential'] ?? $in['id_token'] ?? $in['access_token'] ?? $in['token'] ?? '');
+        $email = trim(strtolower($in['email'] ?? ''));
+        $name = trim($in['name'] ?? $in['full_name'] ?? '');
+        $googleId = trim($in['google_id'] ?? $in['sub'] ?? '');
+        $picture = trim($in['picture'] ?? $in['avatar'] ?? '');
+
+        // Nếu client gửi token từ Google Identity Services
+        if ($token !== '') {
+            $verified = $this->verifyGoogleToken($token);
+            if ($verified) {
+                $email = $verified['email'];
+                if (empty($name) && !empty($verified['name'])) {
+                    $name = $verified['name'];
+                }
+                if (empty($googleId) && !empty($verified['sub'])) {
+                    $googleId = $verified['sub'];
+                }
+                if (empty($picture) && !empty($verified['picture'])) {
+                    $picture = $verified['picture'];
+                }
+            }
+        }
+
+        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return $this->fail('Vui lòng cung cấp địa chỉ email Google hợp lệ!', 422);
+        }
+
+        $user = $this->users->loginOrRegisterGoogle($email, $name, $googleId ?: null, $picture ?: null);
+        if (!$user) {
+            return $this->fail('Không thể khởi tạo hoặc đăng nhập bằng tài khoản Google!', 500);
+        }
+
+        if ($user['status'] !== UserModel::STATUS_ACTIVE || (int)$user['reputation_score'] <= 0) {
+            return $this->fail('Tài khoản này đã bị khóa do vi phạm chính sách hoặc điểm uy tín!', 403);
+        }
+
+        if (!headers_sent()) { @session_regenerate_id(true); }
+        $_SESSION['user_id'] = (int)$user['id'];
+        $_SESSION['username'] = $user['username'];
+        $_SESSION['role'] = $user['role'];
+
+        // Tự động duy trì phiên 30 ngày cho Google Login
+        $rawToken = bin2hex(random_bytes(32));
+        $thirtyDays = 30 * 86400;
+        $this->users->createUserToken((int)$user['id'], $rawToken, 'remember_me', $thirtyDays);
+
+        $cookieValue = (int)$user['id'] . ':' . $rawToken;
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        @setcookie('remember_me', $cookieValue, [
+            'expires'  => time() + $thirtyDays,
+            'path'     => '/',
+            'secure'   => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+
+        return [
+            'ok' => true,
+            'message' => 'Đăng nhập với Google thành công!',
+            'data' => $this->publicUser($user)
+        ];
+    }
+
+    /**
+     * Quên mật khẩu: Nhập email hoặc username -> Nhận OTP qua email và Link chứa Reset Token (15 phút)
      */
     public function forgotPassword(array $in): array
     {
-        $email = trim($in['email'] ?? '');
-        if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return $this->fail('Vui lòng nhập địa chỉ email hợp lệ!', 422);
+        $input = trim($in['email'] ?? $in['account'] ?? $in['username'] ?? '');
+        if ($input === '') {
+            return $this->fail('Vui lòng nhập địa chỉ email hoặc tên đăng nhập!', 422);
         }
 
-        $user = $this->users->findByEmail($email);
+        $user = null;
+        if (filter_var($input, FILTER_VALIDATE_EMAIL)) {
+            $user = $this->users->findByEmail($input);
+        } else {
+            $user = $this->users->findByAccount($input);
+        }
+
         if (!$user) {
-            return $this->fail('Không tìm thấy tài khoản nào gắn với email này!', 404);
+            return $this->fail('Không tìm thấy tài khoản nào khớp với thông tin này!', 404);
         }
 
         if ($user['status'] !== UserModel::STATUS_ACTIVE) {
             return $this->fail('Tài khoản này hiện đang bị khóa!', 403);
         }
+
+        $email = $user['email'];
 
         // Tạo Reset Token (chuỗi ngẫu nhiên an toàn 64 ký tự)
         $resetToken = bin2hex(random_bytes(32));
@@ -263,17 +409,17 @@ class AuthController {
         // Lưu OTP vào bảng email_otps
         $this->users->createEmailOtp($email, $otpCode, 'reset_password', ['user_id' => (int)$user['id']], 15);
 
-        // Gửi email
+        // Gửi email thực tế chứa OTP và Link đặt lại mật khẩu
         Mailer::sendResetPasswordEmail($email, $user['full_name'] ?? $user['username'], $resetToken, $otpCode, 15);
 
         return [
             'ok' => true,
-            'message' => 'Mã OTP và liên kết đặt lại mật khẩu đã được gửi đến email của bạn!',
+            'message' => 'Mã OTP đặt lại mật khẩu đã được gửi đến email của bạn!',
             'data' => [
                 'email'              => $email,
                 'expires_in_minutes' => 15,
-                'debug_otp'          => $otpCode,     // Hỗ trợ test nhanh localhost
-                'debug_token'        => $resetToken  // Hỗ trợ test nhanh localhost
+                'debug_otp'          => $otpCode,     // Hỗ trợ kiểm tra nhanh localhost
+                'debug_token'        => $resetToken  // Hỗ trợ kiểm tra nhanh localhost
             ]
         ];
     }
@@ -407,9 +553,11 @@ class AuthController {
             'id'               => (int)$u['id'],
             'username'         => $u['username'],
             'full_name'        => $u['full_name'] ?? '',
+            'avatar'           => $u['avatar'] ?? '',
             'email'            => $u['email'] ?? '',
             'phone'            => $u['phone'] ?? '',
             'role'             => $u['role'],
+            'is_verified'      => (int)($u['is_verified'] ?? 1),
             'reputation_score' => (int)($u['reputation_score'] ?? 10),
         ];
     }

@@ -312,3 +312,41 @@
         
 
 ----------------------------------------
+[2026-10-20 15:17:27] To: admin@trafficmap.vn | Subject: Yêu cầu đặt lại mật khẩu - Bản đồ Cảnh báo
+
+        
+            
+                ĐẶT LẠI MẬT KHẨU TÀI KHOẢN
+            
+
+            
+                Xin chào admin_super,
+
+                Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại Bản đồ Cảnh Báo.
+
+                
+                Bạn có thể nhập mã OTP đặt lại mật khẩu dưới đây:
+
+                
+                    
+                        289771
+                    
+                
+
+
+                
+                    
+                        Hoặc bấm vào đây để Đặt lại mật khẩu
+                    
+                
+
+
+                Cả mã OTP và liên kết trên sẽ hết hạn sau 15 phút.
+
+                Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này hoặc liên hệ hỗ trợ.
+
+            
+
+        
+
+----------------------------------------

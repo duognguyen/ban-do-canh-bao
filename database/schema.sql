@@ -10,13 +10,17 @@ CREATE TABLE IF NOT EXISTS `users` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `full_name` VARCHAR(100) NULL,
+    `avatar` VARCHAR(255) NULL,
     `email` VARCHAR(100) NOT NULL UNIQUE,
+    `google_id` VARCHAR(100) NULL,
     `phone` VARCHAR(20) NULL,
     `password` VARCHAR(255) NOT NULL,
     `role` ENUM('user', 'admin') DEFAULT 'user',
     `status` ENUM('active', 'blocked') DEFAULT 'active',
+    `is_verified` TINYINT(1) DEFAULT 0,
     `reputation_score` INT DEFAULT 10, -- Điểm uy tín (trừ điểm nếu báo tin giả)
-    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX `idx_google_id` (`google_id`)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `reports` (

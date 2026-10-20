@@ -58,6 +58,7 @@ const Api = {
     // --- Xác thực tài khoản ---
     me:                ()                           => apiRequest('me.php'),
     login:             (account, pass, rememberMe)  => apiRequest('login.php', { method: 'POST', body: { username_or_email: account, password: pass, remember_me: !!rememberMe } }),
+    googleLogin:       (data)                       => apiRequest('google_login.php', { method: 'POST', body: data }),
     register:          (data)                       => apiRequest('register.php', { method: 'POST', body: data }),
     verifyRegisterOtp: (email, otp)                 => apiRequest('register_verify.php', { method: 'POST', body: { email, otp } }),
     checkEmail:        (email)                      => apiRequest('check_email.php', { query: { email } }),

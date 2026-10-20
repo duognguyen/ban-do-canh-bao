@@ -47,7 +47,7 @@ class UserModel {
     public function findById($id)
     {
         $stmt = $this->conn->prepare(
-            "SELECT id, username, full_name, email, phone, role, status, reputation_score, created_at FROM users WHERE id = ? LIMIT 1"
+            "SELECT id, username, full_name, avatar, email, phone, role, status, is_verified, reputation_score, created_at FROM users WHERE id = ? LIMIT 1"
         );
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -73,6 +73,88 @@ class UserModel {
         $stmt->bind_param("sss", $account, $account, $account);
         $stmt->execute();
         return $stmt->get_result()->fetch_assoc() ?: null;
+    }
+
+    public function findByGoogleId(string $googleId)
+    {
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM users WHERE google_id = ? LIMIT 1"
+        );
+        $stmt->bind_param("s", $googleId);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_assoc() ?: null;
+    }
+
+    public function loginOrRegisterGoogle(string $email, string $fullName = '', ?string $googleId = null, ?string $avatar = null): ?array
+    {
+        $email = trim(strtolower($email));
+        $user = null;
+
+        if (!empty($googleId)) {
+            $user = $this->findByGoogleId($googleId);
+        }
+        if (!$user) {
+            $user = $this->findByEmail($email);
+            if ($user) {
+                // Đã có tài khoản: cập nhật google_id, avatar và đánh dấu is_verified = 1
+                $updates = ["is_verified = 1"];
+                $params = [];
+                $types = "";
+                if (!empty($googleId) && empty($user['google_id'])) {
+                    $updates[] = "google_id = ?";
+                    $params[] = $googleId;
+                    $types .= "s";
+                }
+                if (!empty($avatar) && empty($user['avatar'])) {
+                    $updates[] = "avatar = ?";
+                    $params[] = $avatar;
+                    $types .= "s";
+                }
+                $params[] = (int)$user['id'];
+                $types .= "i";
+                $sql = "UPDATE users SET " . implode(", ", $updates) . " WHERE id = ?";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param($types, ...$params);
+                $stmt->execute();
+                return $this->findById($user['id']);
+            }
+        } else {
+            // Đã tìm thấy qua google_id: cập nhật avatar nếu có
+            if (!empty($avatar) && empty($user['avatar'])) {
+                $stmt = $this->conn->prepare("UPDATE users SET avatar = ?, is_verified = 1 WHERE id = ?");
+                $stmt->bind_param("si", $avatar, $user['id']);
+                $stmt->execute();
+                return $this->findById($user['id']);
+            }
+        }
+
+        if ($user) {
+            return $user;
+        }
+
+        // Người dùng chưa tồn tại: tự động tạo mới tài khoản với Họ tên, Email, Avatar và is_verified = 1
+        $baseUser = preg_replace('/[^a-zA-Z0-9_]/', '', strtolower(explode('@', $email)[0]));
+        if (strlen($baseUser) < 3) $baseUser = 'user_' . substr(md5(uniqid()), 0, 6);
+        $candidate = substr($baseUser, 0, 20);
+        $counter = 1;
+        while ($this->checkUsernameExists($candidate)) {
+            $candidate = substr($baseUser, 0, 15) . '_' . $counter;
+            $counter++;
+        }
+        $username = $candidate;
+        $fullName = !empty($fullName) ? trim($fullName) : $username;
+        $randomPass = bin2hex(random_bytes(16));
+        $hashed = password_hash($randomPass, PASSWORD_BCRYPT);
+        $avatarVal = !empty($avatar) ? trim($avatar) : null;
+
+        $stmt = $this->conn->prepare(
+            "INSERT INTO users(username, full_name, avatar, email, google_id, password, role, status, is_verified, reputation_score) VALUES (?, ?, ?, ?, ?, ?, 'user', 'active', 1, 10)"
+        );
+        $stmt->bind_param("ssssss", $username, $fullName, $avatarVal, $email, $googleId, $hashed);
+        $stmt->execute();
+        $newId = (int)$this->conn->insert_id;
+
+        return $this->findById($newId);
     }
 
     // Đăng ký tài khoản (hỗ trợ họ tên, sđt)

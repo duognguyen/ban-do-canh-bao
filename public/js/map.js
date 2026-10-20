@@ -645,91 +645,228 @@ function openSubPanel(title, type, extraData = {}) {
         `;
     }
 
-    // PANEL: ĐĂNG NHẬP (Hỗ trợ Email/Username/SĐT + Remember Me 30 ngày + Quên mật khẩu)
+    // PANEL: ĐĂNG NHẬP (Google + Email/SĐT + Cổng Admin)
     else if (type === 'login') {
         contentDiv.innerHTML = `
-            <div style="padding: 8px 0;">
-                <form onsubmit="handleAuthLogin(event)" style="display:flex; flex-direction:column; gap:14px;">
-                    <div>
-                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:6px; display:block;">Tên đăng nhập, Email hoặc Số điện thoại</label>
-                        <input type="text" id="loginUsername" placeholder="Nhập tài khoản" class="form-input" required autocomplete="username">
-                    </div>
-                    <div>
-                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:6px; display:block;">Mật khẩu</label>
-                        <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" class="form-input" required autocomplete="current-password">
-                    </div>
-
-                    <!-- Ghi nhớ đăng nhập 30 ngày & Quên mật khẩu -->
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem;">
-                        <label style="display:flex; align-items:center; gap:6px; color:#cbd5e1; cursor:pointer;">
-                            <input type="checkbox" id="loginRememberMe" checked style="width:16px; height:16px; accent-color:#2563eb;">
-                            <span>Ghi nhớ đăng nhập (30 ngày)</span>
-                        </label>
-                        <a href="#" onclick="openSubPanel('Quên mật khẩu', 'forgot_password'); return false;" style="color:#60a5fa; text-decoration:none;">Quên mật khẩu?</a>
-                    </div>
-
-                    <button type="submit" id="btnLoginSubmit" style="width:100%; background:#2563eb; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:0.95rem; margin-top:6px; transition:0.2s;">
-                        Đăng nhập
-                    </button>
-                </form>
-                <div style="text-align:center; margin-top:20px; font-size:0.88rem; color:#a1a1aa;">
-                    Chưa có tài khoản? <a href="#" onclick="openSubPanel('Đăng ký tài khoản', 'register'); return false;" style="color:#60a5fa; text-decoration:none; font-weight:600;">Đăng ký ngay</a>
+            <div style="background:#ffffff; border-radius:18px; padding:28px 18px 24px; color:#292929; text-align:center; max-width:360px; margin:0 auto; box-shadow:0 8px 30px rgba(0,0,0,0.18);">
+                <div style="width:48px; height:48px; background:linear-gradient(135deg, #2563eb, #3b82f6); border-radius:12px; display:inline-flex; align-items:center; justify-content:center; color:#ffffff; box-shadow:0 4px 14px rgba(37,99,235,0.28);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M12 8v4"/>
+                        <path d="M12 16h.01"/>
+                    </svg>
                 </div>
-            </div>
-        `;
+
+                <h2 style="font-size:24px; font-weight:700; color:#292929; margin-top:16px; margin-bottom:8px;">Đăng nhập</h2>
+                <p style="font-size:13px; color:#f33a58; line-height:1.45; margin-bottom:20px;">
+                    Mỗi người nên sử dụng riêng một tài khoản, tài khoản nhiều người sử dụng chung sẽ bị khóa.
+                </p>
+
+                <!-- Danh sách nút chọn phương thức: Google + Email/SĐT -->
+                <div id="loginMethodsList" style="display:flex; flex-direction:column; gap:12px;">
+                    <button type="button" class="f8-pill-btn" onclick="startGoogleAuthFromMap('login')">
+                        <span class="f8-pill-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
+                                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.98 0 12s.45 3.83 1.25 5.42l4.03-3.15z"/>
+                                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                            </svg>
+                        </span>
+                        <span class="f8-pill-text">Đăng nhập với Google</span>
+                    </button>
+
+                    <button type="button" class="f8-pill-btn" onclick="document.getElementById('loginMethodsList').style.display='none'; document.getElementById('loginFormSection').style.display='block';">
+                        <span class="f8-pill-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </span>
+                        <span class="f8-pill-text" style="color:#111111;">Sử dụng email / số điện thoại</span>
+                    </button>
+                </div>
+
+                <!-- Form đăng nhập khi bấm Sử dụng email / SĐT -->
+                <div id="loginFormSection" style="display:none; text-align:left;">
+                    <button type="button" class="f8-btn-back" onclick="document.getElementById('loginFormSection').style.display='none'; document.getElementById('loginMethodsList').style.display='flex';">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 18l-6-6 6-6"/>
+                        </svg>
+                        Quay lại
+                    </button>
+
+                    <form onsubmit="handleAuthLogin(event)" style="display:flex; flex-direction:column; gap:12px;">
+                        <div>
+                            <label style="font-size:13px; font-weight:700; color:#292929; margin-bottom:4px; display:block;">Tên đăng nhập hoặc Email</label>
+                            <input type="text" id="loginUsername" placeholder="Email hoặc Số điện thoại" class="f8-form-input" required autocomplete="username">
+                        </div>
+                        <div>
+                            <label style="font-size:13px; font-weight:700; color:#292929; margin-bottom:4px; display:block;">Mật khẩu</label>
+                            <input type="password" id="loginPassword" placeholder="Nhập mật khẩu" class="f8-form-input" required autocomplete="current-password">
+                        </div>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:13px; margin:2px 0;">
+                            <label style="display:flex; align-items:center; gap:6px; color:#4e5867; cursor:pointer;">
+                                <input type="checkbox" id="loginRememberMe" checked style="width:15px; height:15px; accent-color:#2563eb;">
+                                <span>Ghi nhớ 30 ngày</span>
+                            </label>
+                            <a href="#" onclick="openSubPanel('Quên mật khẩu?', 'forgot_password'); return false;" style="color:#2563eb; font-weight:600; text-decoration:none;">Quên mật khẩu?</a>
+                        </div>
+
+                        <button type="submit" id="btnLoginSubmit" class="f8-submit-btn" style="background:linear-gradient(to right, #2563eb, #3b82f6);">
+                            Đăng nhập
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Form đăng nhập Admin khi bấm Cổng Quản trị viên -->
+                <div id="adminLoginSectionMap" style="display:none; text-align:left;">
+                    <button type="button" class="f8-btn-back" onclick="document.getElementById('adminLoginSectionMap').style.display='none'; document.getElementById('loginMethodsList').style.display='flex';">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 18l-6-6 6-6"/>
+                        </svg>
+                        Quay lại Đăng nhập người dùng
+                    </button>
+
+                    <div style="text-align:center; margin-bottom:14px;">
+                        <span style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:9999px;">
+                            🛡️ CỔNG QUẢN TRỊ VIÊN (ADMIN)
+                        </span>
+                    </div>
+
+                    <form onsubmit="handleAdminLoginFromMap(event)" style="display:flex; flex-direction:column; gap:12px;">
+                        <div>
+                            <label style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:4px; display:block;">Tài khoản Admin</label>
+                            <input type="text" id="mapAdminAccount" value="admin_super" class="f8-form-input" required autocomplete="username">
+                        </div>
+                        <div>
+                            <label style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:4px; display:block;">Mật khẩu Admin</label>
+                            <input type="password" id="mapAdminPassword" placeholder="Nhập mật khẩu" class="f8-form-input" required autocomplete="current-password">
+                        </div>
+
+                        <button type="submit" id="btnMapAdminSubmit" class="f8-submit-btn" style="background:linear-gradient(135deg, #0f172a, #1e293b);">
+                            Đăng nhập Quản trị viên
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Liên kết điều hướng bên dưới -->
+                <div style="margin-top:24px; text-align:center; font-size:13.5px; color:#35414c;">
+                    <div>
+                        Bạn chưa có tài khoản? <a href="#" onclick="openSubPanel('Đăng ký tài khoản', 'register'); return false;" style="color:#2563eb; font-weight:700; text-decoration:underline;">Đăng ký</a>
+                    </div>
+                    <div style="margin-top:12px;">
+                        <a href="#" onclick="openSubPanel('Quên mật khẩu?', 'forgot_password'); return false;" style="color:#2563eb; font-weight:700; text-decoration:underline;">Quên mật khẩu?</a>
+                    </div>
+                </div>
+
+                <!-- PHẦN ĐĂNG NHẬP DÀNH CHO ADMIN -->
+                <div style="margin-top:20px; padding-top:14px; border-top:1px dashed #dce0e3; text-align:center;">
+                    <a href="#" onclick="document.getElementById('loginMethodsList').style.display='none'; document.getElementById('loginFormSection').style.display='none'; document.getElementById('adminLoginSectionMap').style.display='block'; return false;" style="color:#2563eb; font-size:13px; font-weight:700; text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+                        🛡️ Đăng nhập Quản trị viên (Admin) &rarr;
+                    </a>
+                </div>
+            </div>`;
     }
 
-    // PANEL: ĐĂNG KÝ (Họ tên, Email/SĐT, Kiểm tra trùng Email realtime, Điều khoản & OTP)
+    // PANEL: ĐĂNG KÝ (Google + Email/SĐT)
     else if (type === 'register') {
         contentDiv.innerHTML = `
-            <div style="padding: 8px 0;">
-                <form onsubmit="handleAuthRegister(event)" style="display:flex; flex-direction:column; gap:12px;">
-                    <div>
-                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:4px; display:block;">Họ và tên <span style="color:#ef4444;">*</span></label>
-                        <input type="text" id="regFullName" placeholder="Ví dụ: Nguyễn Văn A" class="form-input" required>
-                    </div>
-                    <div>
-                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:4px; display:block;">Email (nhận mã OTP xác thực) <span style="color:#ef4444;">*</span></label>
-                        <input type="email" id="regEmail" placeholder="email@domain.com" class="form-input" required oninput="handleEmailRealtimeCheck(this.value)" onblur="handleEmailRealtimeCheck(this.value)">
-                        <div id="emailCheckStatus" style="font-size:0.8rem; margin-top:4px;"></div>
-                    </div>
-                    <div>
-                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:4px; display:block;">Số điện thoại (tùy chọn)</label>
-                        <input type="tel" id="regPhone" placeholder="Ví dụ: 0912345678" class="form-input">
-                    </div>
-                    <div>
-                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:4px; display:block;">Tên đăng nhập (tùy chọn)</label>
-                        <input type="text" id="regUsername" placeholder="Để trống hệ thống sẽ tự sinh theo email" class="form-input">
-                    </div>
-                    <div>
-                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:4px; display:block;">Mật khẩu <span style="color:#ef4444;">*</span></label>
-                        <input type="password" id="regPassword" placeholder="Ít nhất 6 ký tự" class="form-input" required minlength="6" autocomplete="new-password">
-                    </div>
-                    <div>
-                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:4px; display:block;">Xác nhận mật khẩu <span style="color:#ef4444;">*</span></label>
-                        <input type="password" id="regConfirmPassword" placeholder="Nhập lại mật khẩu" class="form-input" required minlength="6" autocomplete="new-password">
-                    </div>
-
-                    <!-- Checkbox Điều khoản & Chính sách -->
-                    <div style="display:flex; align-items:flex-start; gap:8px; margin-top:4px; font-size:0.83rem; color:#cbd5e1;">
-                        <input type="checkbox" id="regTermsAgree" checked required style="width:18px; height:18px; accent-color:#10b981; margin-top:2px;">
-                        <label for="regTermsAgree" style="cursor:pointer; line-height:1.4;">
-                            Tôi đã đọc và đồng ý với 
-                            <a href="#" onclick="openSubPanel('Điều khoản dịch vụ', 'terms'); return false;" style="color:#60a5fa; text-decoration:none;">Điều khoản dịch vụ</a> 
-                            & 
-                            <a href="#" onclick="openSubPanel('Chính sách bảo mật', 'privacy'); return false;" style="color:#60a5fa; text-decoration:none;">Chính sách bảo mật</a>.
-                        </label>
-                    </div>
-
-                    <button type="submit" id="btnRegisterSubmit" style="width:100%; background:#10b981; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:0.95rem; margin-top:8px;">
-                        Tiếp tục (Nhận mã OTP)
-                    </button>
-                </form>
-                <div style="text-align:center; margin-top:16px; font-size:0.88rem; color:#a1a1aa;">
-                    Đã có tài khoản? <a href="#" onclick="openSubPanel('Đăng nhập tài khoản', 'login'); return false;" style="color:#60a5fa; text-decoration:none; font-weight:600;">Đăng nhập</a>
+            <div style="background:#ffffff; border-radius:18px; padding:28px 18px 24px; color:#292929; text-align:center; max-width:360px; margin:0 auto; box-shadow:0 8px 30px rgba(0,0,0,0.18);">
+                <div style="width:48px; height:48px; background:linear-gradient(135deg, #2563eb, #3b82f6); border-radius:12px; display:inline-flex; align-items:center; justify-content:center; color:#ffffff; box-shadow:0 4px 14px rgba(37,99,235,0.28);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M12 8v4"/>
+                        <path d="M12 16h.01"/>
+                    </svg>
                 </div>
-            </div>
-        `;
+
+                <h2 style="font-size:24px; font-weight:700; color:#292929; margin-top:16px; margin-bottom:8px;">Đăng ký tài khoản</h2>
+                <p style="font-size:13px; color:#f33a58; line-height:1.45; margin-bottom:20px;">
+                    Mỗi người nên sử dụng riêng một tài khoản, tài khoản nhiều người sử dụng chung sẽ bị khóa.
+                </p>
+
+                <!-- Danh sách nút bấm: Google + Email/SĐT -->
+                <div id="regMethodsList" style="display:flex; flex-direction:column; gap:12px;">
+                    <button type="button" class="f8-pill-btn" onclick="startGoogleAuthFromMap('register')">
+                        <span class="f8-pill-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
+                                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.34 24 12 24z"/>
+                                <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.17 0 9.98 0 12s.45 3.83 1.25 5.42l4.03-3.15z"/>
+                                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                            </svg>
+                        </span>
+                        <span class="f8-pill-text">Đăng ký với Google</span>
+                    </button>
+
+                    <button type="button" class="f8-pill-btn" onclick="document.getElementById('regMethodsList').style.display='none'; document.getElementById('regFormSection').style.display='block';">
+                        <span class="f8-pill-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                        </span>
+                        <span class="f8-pill-text" style="color:#111111;">Sử dụng email / số điện thoại</span>
+                    </button>
+                </div>
+
+                <!-- Form đăng ký khi bấm Sử dụng email / SĐT -->
+                <div id="regFormSection" style="display:none; text-align:left;">
+                    <button type="button" class="f8-btn-back" onclick="document.getElementById('regFormSection').style.display='none'; document.getElementById('regMethodsList').style.display='flex';">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 18l-6-6 6-6"/>
+                        </svg>
+                        Quay lại
+                    </button>
+
+                    <form onsubmit="handleAuthRegister(event)" style="display:flex; flex-direction:column; gap:10px;">
+                        <div>
+                            <label style="font-size:12.5px; font-weight:700; color:#292929; margin-bottom:3px; display:block;">Họ và tên <span style="color:#f33a58;">*</span></label>
+                            <input type="text" id="regFullName" class="f8-form-input" placeholder="Ví dụ: Nguyễn Văn A" required>
+                        </div>
+                        <div>
+                            <label style="font-size:12.5px; font-weight:700; color:#292929; margin-bottom:3px; display:block;">Email <span style="color:#f33a58;">*</span></label>
+                            <input type="email" id="regEmail" class="f8-form-input" placeholder="email@domain.com" required oninput="handleEmailRealtimeCheck(this.value)" onblur="handleEmailRealtimeCheck(this.value)">
+                            <div id="emailCheckStatus" style="font-size:11.5px; margin-top:3px; padding-left:8px;"></div>
+                        </div>
+                        <div>
+                            <label style="font-size:12.5px; font-weight:700; color:#292929; margin-bottom:3px; display:block;">Số điện thoại (tùy chọn)</label>
+                            <input type="tel" id="regPhone" class="f8-form-input" placeholder="Ví dụ: 0912345678">
+                        </div>
+                        <div>
+                            <label style="font-size:12.5px; font-weight:700; color:#292929; margin-bottom:3px; display:block;">Mật khẩu <span style="color:#f33a58;">*</span></label>
+                            <input type="password" id="regPassword" class="f8-form-input" placeholder="Ít nhất 6 ký tự" required minlength="6" autocomplete="new-password">
+                        </div>
+                        <div>
+                            <label style="font-size:12.5px; font-weight:700; color:#292929; margin-bottom:3px; display:block;">Xác nhận mật khẩu <span style="color:#f33a58;">*</span></label>
+                            <input type="password" id="regConfirmPassword" class="f8-form-input" placeholder="Nhập lại mật khẩu" required minlength="6" autocomplete="new-password">
+                        </div>
+
+                        <div style="display:flex; align-items:flex-start; gap:6px; margin:4px 0 8px; font-size:12px; color:#4e5867;">
+                            <input type="checkbox" id="regTermsAgree" checked required style="width:15px; height:15px; accent-color:#2563eb; margin-top:2px;">
+                            <label for="regTermsAgree" style="cursor:pointer; line-height:1.35;">
+                                Đồng ý với Điều khoản dịch vụ & Chính sách bảo mật.
+                            </label>
+                        </div>
+
+                        <button type="submit" id="btnRegisterSubmit" class="f8-submit-btn" style="background:linear-gradient(to right, #2563eb, #3b82f6);">
+                            Đăng ký tài khoản
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Liên kết điều hướng bên dưới -->
+                <div style="margin-top:24px; text-align:center; font-size:13.5px; color:#35414c;">
+                    <div>
+                        Bạn đã có tài khoản? <a href="#" onclick="openSubPanel('Đăng nhập', 'login'); return false;" style="color:#2563eb; font-weight:700; text-decoration:underline;">Đăng nhập</a>
+                    </div>
+                    <div style="margin-top:12px;">
+                        <a href="#" onclick="openSubPanel('Quên mật khẩu?', 'forgot_password'); return false;" style="color:#2563eb; font-weight:700; text-decoration:underline;">Quên mật khẩu?</a>
+                    </div>
+                </div>
+            </div>`;
     }
 
     // PANEL: XÁC THỰC MÃ OTP ĐĂNG KÝ
@@ -775,38 +912,73 @@ function openSubPanel(title, type, extraData = {}) {
         `;
     }
 
-    // PANEL: QUÊN MẬT KHẨU (Gửi token và OTP 15 phút)
+    // PANEL: QUÊN MẬT KHẨU
     else if (type === 'forgot_password') {
         contentDiv.innerHTML = `
-            <div style="padding: 8px 0;">
-                <div style="text-align:center; margin-bottom:16px;">
-                    <div style="width:52px; height:52px; background:#f59e0b; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; color:white; font-size:1.6rem;">
-                        <i class="ph-bold ph-key"></i>
+            <div style="background:#ffffff; border-radius:18px; padding:28px 18px 24px; color:#292929; max-width:360px; margin:0 auto; box-shadow:0 8px 30px rgba(0,0,0,0.18); position:relative;">
+                <!-- Nút "< Quay lại" nhỏ gọn ở góc trên bên trái -->
+                <button type="button" class="f8-btn-back" onclick="openSubPanel('Đăng nhập', 'login');" style="margin-bottom:8px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                    Quay lại
+                </button>
+
+                <!-- Logo ứng dụng -->
+                <div style="text-align:center; margin-bottom:12px;">
+                    <div style="width:48px; height:48px; background:linear-gradient(135deg, #2563eb, #3b82f6); border-radius:12px; display:inline-flex; align-items:center; justify-content:center; color:#ffffff; box-shadow:0 4px 14px rgba(37,99,235,0.28);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            <path d="M12 8v4"/>
+                            <path d="M12 16h.01"/>
+                        </svg>
                     </div>
-                    <h4 style="color:white; font-size:1.05rem; margin-bottom:6px;">Khôi phục mật khẩu</h4>
-                    <p style="color:#a1a1aa; font-size:0.84rem; line-height:1.5;">
-                        Nhập địa chỉ email tài khoản của bạn để nhận liên kết và mã OTP đặt lại mật khẩu có thời hạn 15 phút.
-                    </p>
                 </div>
 
-                <form onsubmit="handleForgotPassword(event)" style="display:flex; flex-direction:column; gap:14px;">
-                    <div>
-                        <label style="color:#a1a1aa; font-size:0.82rem; margin-bottom:6px; display:block;">Email tài khoản</label>
-                        <input type="email" id="forgotEmail" placeholder="email@domain.com" class="form-input" required>
+                <!-- Tiêu đề: "Quên mật khẩu?" & Mô tả phụ -->
+                <h2 style="font-size:26px; font-weight:700; color:#000000; text-align:center; margin-bottom:6px;">Quên mật khẩu?</h2>
+                <p style="font-size:13.5px; color:#4e5867; text-align:center; margin-bottom:20px; line-height:1.45;">
+                    Nhập email hoặc tên đăng nhập để nhận mã đặt lại mật khẩu.
+                </p>
+
+                <!-- Khu vực Form (chiều rộng 360px, căn giữa) -->
+                <div id="f8ForgotDebugBox" style="display:none; background:#f0fdfa; border:1px dashed #1dbfaf; color:#0f766e; padding:8px 12px; border-radius:10px; font-size:12.5px; margin-bottom:12px;">
+                    💡 <b>Môi trường thử nghiệm:</b> Mã OTP là: <span id="f8DebugOtpCode" style="font-weight:bold; letter-spacing:2px; color:#111;"></span>
+                </div>
+
+                <form onsubmit="handleF8ResetPasswordSubmit(event)" style="display:flex; flex-direction:column;">
+                    <label style="font-size:14px; font-weight:700; color:#292929; margin-bottom:8px; text-align:left;">Tên đăng nhập</label>
+
+                    <!-- Ô Input 1: Hình viên thuốc -->
+                    <input type="text" id="forgotEmail" class="f8-pill-input" placeholder="Email hoặc Username" required oninput="validateF8ForgotInput(this.value)">
+
+                    <!-- Ô Input 2: Tổ hợp nhập mã + nút Gửi mã -->
+                    <div class="f8-combo-input">
+                        <input type="text" id="resetOtpCode" class="f8-combo-inner-input" placeholder="Nhập mã xác nhận" maxlength="6" autocomplete="one-time-code">
+                        <button type="button" id="btnF8SendCode" class="f8-btn-send-code" onclick="sendF8ForgotCode()">
+                            Gửi mã
+                        </button>
                     </div>
-                    <button type="submit" id="btnForgotSubmit" style="width:100%; background:#f59e0b; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; cursor:pointer; font-size:0.95rem;">
-                        Gửi liên kết & Mã OTP
+
+                    <!-- Ô nhập mật khẩu mới (Hiện khi đã gửi mã) -->
+                    <div id="f8NewPassSection" style="display:none; margin-top:12px; flex-direction:column; gap:10px;">
+                        <input type="password" id="resetNewPassword" class="f8-pill-input" placeholder="Mật khẩu mới (ít nhất 6 ký tự)" minlength="6">
+                        <input type="password" id="resetConfirmPassword" class="f8-pill-input" placeholder="Xác nhận mật khẩu mới" minlength="6">
+                    </div>
+
+                    <!-- Nút Submit: Nền gradient xanh cyan/ngọc nhạt -->
+                    <button type="submit" id="btnForgotSubmit" class="f8-btn-submit-reset">
+                        Đặt lại mật khẩu
                     </button>
                 </form>
 
-                <div style="text-align:center; margin-top:20px; font-size:0.88rem; color:#a1a1aa;">
-                    <a href="#" onclick="openSubPanel('Đăng nhập tài khoản', 'login'); return false;" style="color:#60a5fa; text-decoration:none; font-weight:600;">&larr; Quay lại Đăng nhập</a>
+                <div style="margin-top:20px; text-align:center; font-size:13.5px; color:#4e5867;">
+                    Đã nhớ mật khẩu? <a href="#" onclick="openSubPanel('Đăng nhập', 'login'); return false;" style="color:#2563eb; font-weight:700; text-decoration:underline;">Đăng nhập</a>
                 </div>
-            </div>
-        `;
+            </div>`;
     }
 
-    // PANEL: ĐẶT LẠI MẬT KHẨU (Token trên link hoặc OTP)
+    // PANEL: ĐẶT LẠI MẬT KHẨU
     else if (type === 'reset_password') {
         const token = extraData.token || '';
         const email = extraData.email || '';
@@ -1254,3 +1426,167 @@ document.addEventListener('DOMContentLoaded', () => {
 // Tải dữ liệu lần đầu và tự động làm mới mỗi 25 giây
 loadReports();
 setInterval(loadReports, 25000);
+// =========================================================================
+// CÁC HÀM TIỆN ÍCH F8 AUTH
+// =========================================================================
+function validateF8ForgotInput(val) {
+    const btn = document.getElementById('btnF8SendCode');
+    if (!btn) return;
+    val = (val || '').trim();
+    if (val.length >= 3) {
+        btn.classList.add('active');
+    } else {
+        btn.classList.remove('active');
+    }
+}
+
+async function sendF8ForgotCode() {
+    const btn = document.getElementById('btnF8SendCode');
+    if (!btn || !btn.classList.contains('active')) return;
+    const account = document.getElementById('forgotEmail').value.trim();
+    btn.innerText = 'Đang gửi...';
+    btn.disabled = true;
+
+    try {
+        const res = await Api.forgotPassword(account);
+        showToast('Đã gửi mã xác nhận đến email tài khoản!', true);
+        window.currentF8TargetEmail = (res && res.email) ? res.email : account;
+        window.currentF8ResetToken = (res && res.debug_token) ? res.debug_token : '';
+
+        const newPassSec = document.getElementById('f8NewPassSection');
+        if (newPassSec) newPassSec.style.display = 'flex';
+        const codeInput = document.getElementById('resetOtpCode');
+        if (codeInput) codeInput.focus();
+
+        if (res && res.debug_otp) {
+            const debugBox = document.getElementById('f8ForgotDebugBox');
+            const debugText = document.getElementById('f8DebugOtpCode');
+            if (debugBox && debugText) {
+                debugBox.style.display = 'block';
+                debugText.innerText = res.debug_otp;
+            }
+        }
+
+        btn.innerText = 'Gửi lại';
+        btn.disabled = false;
+    } catch (err) {
+        showToast(err.message || 'Không thể gửi mã xác nhận!', false);
+        btn.innerText = 'Gửi mã';
+        btn.disabled = false;
+    }
+}
+
+async function handleF8ResetPasswordSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnForgotSubmit');
+    const account = document.getElementById('forgotEmail').value.trim();
+    const otp = document.getElementById('resetOtpCode').value.trim();
+    const newPassSection = document.getElementById('f8NewPassSection');
+
+    if (!account) {
+        showToast('Vui lòng nhập Email hoặc Username!', false);
+        document.getElementById('forgotEmail').focus();
+        return;
+    }
+
+    if (!otp) {
+        showToast('Vui lòng bấm "Gửi mã" và nhập mã xác nhận gồm 6 số!', false);
+        document.getElementById('resetOtpCode').focus();
+        return;
+    }
+
+    if (!newPassSection || newPassSection.style.display === 'none') {
+        if (newPassSection) newPassSection.style.display = 'flex';
+        showToast('Vui lòng nhập mật khẩu mới!', false);
+        const passInput = document.getElementById('resetNewPassword');
+        if (passInput) passInput.focus();
+        return;
+    }
+
+    const newPass = document.getElementById('resetNewPassword').value;
+    const confirmPass = document.getElementById('resetConfirmPassword').value;
+
+    if (newPass.length < 6) {
+        showToast('Mật khẩu mới phải có ít nhất 6 ký tự!', false);
+        return;
+    }
+    if (newPass !== confirmPass) {
+        showToast('Mật khẩu xác nhận không khớp!', false);
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerText = 'Đang cập nhật...';
+    }
+
+    try {
+        await Api.resetPassword({
+            token: window.currentF8ResetToken || '',
+            email: window.currentF8TargetEmail || account,
+            otp: otp,
+            password: newPass,
+            confirm_password: confirmPass
+        });
+
+        showToast('Đặt lại mật khẩu thành công! Vui lòng đăng nhập.', true);
+        setTimeout(() => {
+            openSubPanel('Đăng nhập vào F8', 'login');
+        }, 900);
+    } catch (err) {
+        showToast(err.message || 'Đặt lại mật khẩu thất bại!', false);
+        if (btn) {
+            btn.disabled = false;
+            btn.innerText = 'Đặt lại mật khẩu';
+        }
+    }
+}
+
+// =========================================================================
+// TIỆN ÍCH GOOGLE AUTH & ĐĂNG NHẬP ADMIN TRÊN BẢN ĐỒ
+// =========================================================================
+async function startGoogleAuthFromMap(mode = 'login') {
+    const email = prompt("ĐĂNG NHẬP / ĐĂNG KÝ VỚI TÀI KHOẢN GOOGLE\nNhập địa chỉ Gmail của bạn:", "user@gmail.com");
+    if (!email) return;
+    const name = prompt("Họ và tên hiển thị của bạn:", "Người dùng Google") || "";
+
+    showToast("Đang xác thực tài khoản Google...", true);
+    try {
+        const res = await Api.googleLogin({ email: email.trim(), name: name.trim() });
+        showToast("Đăng nhập với Google thành công!", true);
+        setTimeout(() => {
+            if (res && res.role === 'admin') {
+                window.location.href = 'index.php?route=admin_dashboard';
+            } else {
+                window.location.reload();
+            }
+        }, 600);
+    } catch (err) {
+        showToast(err.message || "Đăng nhập Google thất bại!", false);
+    }
+}
+
+async function handleAdminLoginFromMap(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btnMapAdminSubmit');
+    const account = document.getElementById('mapAdminAccount').value.trim();
+    const password = document.getElementById('mapAdminPassword').value;
+
+    if (btn) { btn.disabled = true; btn.innerText = 'Đang xác thực...'; }
+
+    try {
+        const res = await Api.login(account, password, true);
+        if (res && res.role === 'admin') {
+            showToast("Đăng nhập Quản trị viên thành công!", true);
+            setTimeout(() => {
+                window.location.href = 'index.php?route=admin_dashboard';
+            }, 600);
+        } else {
+            showToast("Tài khoản này không có quyền Quản trị viên!", false);
+            if (btn) { btn.disabled = false; btn.innerText = 'Đăng nhập Quản trị viên'; }
+        }
+    } catch (err) {
+        showToast(err.message || "Đăng nhập Quản trị viên thất bại!", false);
+        if (btn) { btn.disabled = false; btn.innerText = 'Đăng nhập Quản trị viên'; }
+    }
+}
