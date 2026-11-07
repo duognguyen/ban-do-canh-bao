@@ -84,22 +84,102 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
 
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+
+        /* Nút toggle menu & đóng mở trên mobile */
+        .btn-toggle-admin-menu { display: none; background: #0f172a; color: #fff; border: 1px solid #334155; border-radius: 8px; width: 38px; height: 38px; align-items: center; justify-content: center; font-size: 1.25rem; cursor: pointer; flex-shrink: 0; }
+        .btn-close-admin-sidebar { display: none; background: none; border: none; color: #94a3b8; font-size: 1.35rem; cursor: pointer; padding: 4px; }
+        .admin-sidebar-overlay { display: none; }
+
+        /* Responsive cho màn hình điện thoại di động */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .admin-sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 270px;
+                z-index: 2000;
+                transform: translateX(-100%);
+                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 4px 0 25px rgba(0,0,0,0.5);
+            }
+            .admin-sidebar.open {
+                transform: translateX(0);
+            }
+            .admin-sidebar-overlay {
+                display: block;
+                position: fixed;
+                inset: 0;
+                background: rgba(15, 23, 42, 0.65);
+                backdrop-filter: blur(3px);
+                z-index: 1999;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.25s ease;
+            }
+            .admin-sidebar-overlay.open {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            .btn-toggle-admin-menu {
+                display: inline-flex;
+            }
+            .btn-close-admin-sidebar {
+                display: block;
+            }
+            .admin-brand {
+                margin-bottom: 16px;
+            }
+            .admin-main {
+                width: 100%;
+                min-width: 0;
+            }
+            .admin-header {
+                padding: 12px 16px;
+                gap: 10px;
+            }
+            .admin-header h2 {
+                font-size: 1.05rem !important;
+            }
+            .admin-header p {
+                display: none;
+            }
+            .admin-content {
+                padding: 16px 14px;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            .card-table {
+                padding: 14px 12px;
+            }
+        }
     </style>
 </head>
 <body>
 
+    <!-- Lớp phủ nền mờ khi mở menu trên điện thoại -->
+    <div class="admin-sidebar-overlay" onclick="toggleAdminSidebar()"></div>
+
     <!-- Sidebar Quản trị -->
     <div class="admin-sidebar">
-        <div class="admin-brand">
-            <i class="ph-bold ph-shield-check"></i>
-            <div>
-                <span>UrbanGuard</span>
-                <span style="font-size:0.75rem; color:#94a3b8; display:block; font-weight:500;">Admin Management</span>
+        <div class="admin-brand" style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="ph-bold ph-shield-check"></i>
+                <div>
+                    <span>UrbanGuard</span>
+                    <span style="font-size:0.75rem; color:#94a3b8; display:block; font-weight:500;">Admin Management</span>
+                </div>
             </div>
+            <button type="button" class="btn-close-admin-sidebar" onclick="toggleAdminSidebar()" title="Đóng menu">
+                <i class="ph-bold ph-x"></i>
+            </button>
         </div>
         <div class="admin-menu">
             <a id="tab-btn-users" class="active" onclick="switchTab('users')">
-                <i class="ph-bold ph-users"></i> Tài khoản khách hàng
+                <i class="ph-bold ph-users"></i> Tài khoản người dùng
             </a>
             <a id="tab-btn-reports" onclick="switchTab('reports')">
                 <i class="ph-bold ph-warning-circle"></i> Quản lý sự cố & Xuất Excel
@@ -118,9 +198,14 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     <!-- Nội dung chính -->
     <div class="admin-main">
         <div class="admin-header">
-            <div>
-                <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a;">Bảng Quản Trị Hệ Thống</h2>
-                <p style="font-size: 0.85rem; color: #64748b;">Quản lý dữ liệu tài khoản thành viên, điểm sự cố giao thông và cứu hộ SOS</p>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button type="button" class="btn-toggle-admin-menu" onclick="toggleAdminSidebar()" title="Mở danh mục Admin">
+                    <i class="ph-bold ph-list"></i>
+                </button>
+                <div>
+                    <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a;">Bảng Quản Trị Hệ Thống</h2>
+                    <p style="font-size: 0.85rem; color: #64748b;">Quản lý dữ liệu tài khoản thành viên, điểm sự cố</p>
+                </div>
             </div>
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span style="font-size: 0.88rem; color: #64748b;">Quản trị viên: <strong style="color: #0f172a;"><?= htmlspecialchars($_SESSION['username'] ?? 'Admin') ?></strong></span>
@@ -135,14 +220,14 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-info">
-                        <h4>Tổng tài khoản khách hàng</h4>
+                        <h4>Tổng tài khoản người dùng</h4>
                         <div class="number" id="totalUsersCount">--</div>
                     </div>
                     <div class="stat-icon"><i class="ph-bold ph-users"></i></div>
                 </div>
                 <div class="stat-card green">
                     <div class="stat-info">
-                        <h4>Khách hàng đang hoạt động</h4>
+                        <h4>Tài khoản người dùng đang hoạt động</h4>
                         <div class="number" id="activeUsersCount">--</div>
                     </div>
                     <div class="stat-icon"><i class="ph-bold ph-user-check"></i></div>
@@ -156,11 +241,11 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
                 </div>
             </div>
 
-            <!-- TAB 1: QUẢN LÝ TÀI KHOẢN KHÁCH HÀNG -->
+            <!-- TAB 1: QUẢN LÝ TÀI KHOẢN -->
             <div id="tab-users" class="tab-content active">
                 <div class="card-table">
                     <div class="card-table-header">
-                        <h3><i class="ph-bold ph-users" style="color: #2563eb;"></i> Danh Sách Tài Khoản Khách Hàng (Users)</h3>
+                        <h3><i class="ph-bold ph-users" style="color: #2563eb;"></i> Danh sách tài khoản người dùng</h3>
                         <button type="button" onclick="loadUsers()" style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 14px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">
                             <i class="ph-bold ph-arrows-clockwise"></i> Làm mới
                         </button>
@@ -174,8 +259,8 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
                         </div>
                         <select id="userRoleFilter" class="filter-select" onchange="filterUsersTable()">
                             <option value="all">Tất cả vai trò</option>
-                            <option value="user">Chỉ khách hàng (User)</option>
-                            <option value="admin">Quản trị viên (Admin)</option>
+                            <option value="user">Chỉ người dùng </option>
+                            <option value="admin">Quản trị viên</option>
                         </select>
                         <select id="userStatusFilter" class="filter-select" onchange="filterUsersTable()">
                             <option value="all">Tất cả trạng thái</option>
@@ -238,35 +323,6 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
                     </div>
                 </div>
             </div>
-
-            <!-- TAB 3: ĐIỀU PHỐI CỨU HỘ SOS -->
-            <div id="tab-sos" class="tab-content">
-                <div class="card-table">
-                    <div class="card-table-header">
-                        <h3><i class="ph-bold ph-first-aid" style="color: #ef4444;"></i> Danh Sách Tín Hiệu Cứu Hộ Khẩn Cấp SOS (24/7)</h3>
-                    </div>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Người gặp nạn</th>
-                                    <th>Số điện thoại</th>
-                                    <th>Phương tiện / Tình trạng</th>
-                                    <th>Vị trí GPS</th>
-                                    <th>Thời gian gửi</th>
-                                    <th>Trạng thái</th>
-                                    <th>Thao tác điều phối</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sosTableBody">
-                                <tr><td colspan="8" style="text-align: center; color: #64748b; padding: 30px;">Đang tải yêu cầu cứu hộ...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
         </div>
     </div>
 
@@ -276,6 +332,14 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     <script>
         const currentAdminId = <?= (int)($_SESSION['user_id'] ?? 0) ?>;
         let globalUsersList = [];
+
+        // Đóng / mở menu sidebar trên điện thoại
+        function toggleAdminSidebar() {
+            const sidebar = document.querySelector('.admin-sidebar');
+            const overlay = document.querySelector('.admin-sidebar-overlay');
+            if (sidebar) sidebar.classList.toggle('open');
+            if (overlay) overlay.classList.toggle('open');
+        }
 
         function switchTab(tab) {
             document.querySelectorAll('.admin-menu a').forEach(a => a.classList.remove('active'));
@@ -289,6 +353,14 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
             if (tab === 'users') loadUsers();
             if (tab === 'reports') loadReports();
             if (tab === 'sos') loadSos();
+
+            // Tự động đóng sidebar trên thiết bị di động sau khi chuyển tab
+            if (window.innerWidth <= 768) {
+                const sidebar = document.querySelector('.admin-sidebar');
+                const overlay = document.querySelector('.admin-sidebar-overlay');
+                if (sidebar) sidebar.classList.remove('open');
+                if (overlay) overlay.classList.remove('open');
+            }
         }
 
         // TẢI DANH SÁCH TÀI KHOẢN KHÁCH HÀNG TỪ DATABASE

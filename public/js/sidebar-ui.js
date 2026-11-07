@@ -50,6 +50,39 @@ function openReportPanel() {
     if (rep) rep.style.display = 'flex';
 }
 
+// 1. Hàm đặt lại toàn bộ giao diện form báo cáo về mặc định sạch sẽ
+function resetReportFormUI() {
+    const form = document.getElementById('reportAddForm');
+    if (!form) return;
+    form.reset();
+
+    // Reset nút Loại sự cố về "Ngập lụt" duy nhất
+    const defaultTypeCard = document.querySelector('.incident-type-selector .incident-radio-card');
+    if (typeof selectIncidentType === 'function' && defaultTypeCard) {
+        selectIncidentType('ngap_nuoc', defaultTypeCard);
+    }
+
+    // Reset mức nước ngập về "Ngang mắt cá chân"
+    const defaultDepthCard = document.querySelector('#field-flood-depth .visual-level-card');
+    if (typeof selectVisualDepth === 'function' && defaultDepthCard) {
+        selectVisualDepth('mat_ca', defaultDepthCard);
+    }
+
+    // Reset tình trạng kẹt xe về "Di chuyển chậm"
+    const defaultSpeedCard = document.querySelector('#field-traffic-speed .visual-level-card');
+    if (typeof selectTrafficSpeed === 'function' && defaultSpeedCard) {
+        selectTrafficSpeed('cham', defaultSpeedCard);
+    }
+
+    // Xóa tọa độ và mô tả cũ
+    const latInp = document.getElementById('report_lat');
+    const lngInp = document.getElementById('report_lng');
+    const addrInp = document.getElementById('report_address');
+    if (latInp) latInp.value = '';
+    if (lngInp) lngInp.value = '';
+    if (addrInp) addrInp.value = '';
+}
+
 function closeReportPanel() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');
@@ -66,6 +99,9 @@ function closeReportPanel() {
         map.removeLayer(selectedMarker);
         selectedMarker = null;
     }
+
+    // Tự động làm sạch trạng thái các nút khi đóng form
+    resetReportFormUI();
 }
 
 function openReportSheet() {
@@ -96,8 +132,7 @@ async function handleReportFormSubmit(e) {
     try {
         await Api.addReport(formData);
         showToast("Gửi báo cáo sự cố thành công!", true);
-        closeReportPanel();
-        form.reset();
+        closeReportPanel(); // Tự động đóng và reset sạch sẽ qua resetReportFormUI()
         // Cập nhật ngay điểm mới lên bản đồ
         await loadReports();
     } catch (err) {
@@ -165,48 +200,84 @@ function openSubPanel(title, type, extraData = {}) {
     const contentDiv = document.getElementById('sub-content');
 
     // PANEL: CHÚ GIẢI
+        // PANEL: CHÚ GIẢI CHUẨN 4 CẤP & KÝ HIỆU BẢN ĐỒ
     if (type === 'legend') {
         contentDiv.innerHTML = `
-            <div class="panel-card">
-                <h4><i class="ph-bold ph-waves" style="color:#60a5fa; margin-right:6px;"></i> Cảnh báo Ngập nước</h4>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:26px; height:26px; background:#60a5fa; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-waves"></i></div>
-                        <span style="color:#d4d4d8; font-size:0.88rem;">Mắt cá (<20cm)</span>
+            <!-- 1. THANG ĐO CẤP ĐỘ NGUY HIỂM -->
+            <div class="panel-card" style="border-left: 4px solid #38bdf8;">
+                <h4 style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                    <span style="color:#ffffff; font-weight:700;"><i class="ph-bold ph-gauge" style="color:#38bdf8; margin-right:6px;"></i> Thang Cảnh Báo Chuẩn 4 Cấp</span>
+                    <span style="font-size:0.7rem; background:rgba(56,189,248,0.2); color:#38bdf8; padding:2px 8px; border-radius:10px; font-weight:700;">Tiêu chuẩn</span>
+                </h4>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+            
+
+                    <!-- Cấp 2: Nhẹ -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:#27272a; padding:8px 10px; border-radius:8px; border-left:3px solid #60a5fa;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">🚗 Đi chậm (15-25 km/h)</span>
+                        </div>
+                        <span style="background:rgba(96,165,250,0.15); color:#60a5fa; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:6px;">Đi chậm</span>
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:26px; height:26px; background:#3b82f6; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-waves"></i></div>
-                        <span style="color:#d4d4d8; font-size:0.88rem;">Gối (20-40cm)</span>
+
+                    <!-- Cấp 3: Trung bình / Ùn ứ -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:#27272a; padding:8px 10px; border-radius:8px; border-left:3px solid #f59e0b;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.5); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">⛔ Tắc nghẽn (<5 km/h)</span>
+                        </div>
+                        <span style="background:rgba(245,158,11,0.15); color:#fbbf24; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:6px;">Cảnh báo</span>
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:26px; height:26px; background:#2563eb; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-waves"></i></div>
-                        <span style="color:#d4d4d8; font-size:0.88rem;">Bánh xe (>40cm)</span>
-                    </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:26px; height:26px; background:#10b981; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-check"></i></div>
-                        <span style="color:#d4d4d8; font-size:0.88rem;">Đã rút nước</span>
+
+                    <!-- Cấp 4: Nghiêm trọng -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; background:#27272a; padding:8px 10px; border-radius:8px; border-left:3px solid #ef4444;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">⚠️ Ùn ứ nặng (5-15 km/h)</span>
+                        </div>
+                        <span style="background:rgba(239,68,68,0.2); color:#f87171; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:6px;">Nguy hiểm</span>
                     </div>
                 </div>
             </div>
 
+            <!-- 2. PHÂN LOẠI CHI TIẾT THEO SỰ CỐ -->
             <div class="panel-card">
-                <h4><i class="ph-bold ph-car" style="color:#fb923c; margin-right:6px;"></i> Cảnh báo Kẹt xe & Sự cố</h4>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:26px; height:26px; background:#f97316; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-car"></i></div>
-                        <span style="color:#d4d4d8; font-size:0.88rem;">Kẹt xe</span>
+                <h4 style="color:#ffffff; font-weight:700; margin-bottom:10px;">
+                    <i class="ph-bold ph-waves" style="color:#60a5fa; margin-right:6px;"></i> Chi tiết Điểm Ngập Nước
+                </h4>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; font-size:0.82rem;">
+                    <div style="background:#27272a; padding:8px; border-radius:8px;">
+                        <span style="color:#93c5fd; font-weight:700;">🌊 Mắt cá chân:</span>
+                        <p style="color:#a1a1aa; font-size:0.74rem; margin-top:2px;">Dưới 20cm (Xe máy qua tốt)</p>
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:26px; height:26px; background:#ea580c; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-warning"></i></div>
-                        <span style="color:#d4d4d8; font-size:0.88rem;">Va chạm</span>
+                    <div style="background:#27272a; padding:8px; border-radius:8px;">
+                        <span style="color:#60a5fa; font-weight:700;">🌊 Nửa bánh xe:</span>
+                        <p style="color:#a1a1aa; font-size:0.74rem; margin-top:2px;">20 - 40cm (Khuyên tránh xe ga)</p>
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:26px; height:26px; background:#dc2626; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-minus"></i></div>
-                        <span style="color:#d4d4d8; font-size:0.88rem;">Đóng đường</span>
+                    <div style="background:#27272a; padding:8px; border-radius:8px;">
+                        <span style="color:#f87171; font-weight:700;">🚨 Ngang yên xe:</span>
+                        <p style="color:#a1a1aa; font-size:0.74rem; margin-top:2px;">Trên 40cm (Chết máy / Cô lập)</p>
                     </div>
-                    <div style="display:flex; align-items:center; gap:8px;">
-                        <div style="width:26px; height:26px; background:#eab308; border-radius:50%; display:flex; justify-content:center; align-items:center; color:white; font-size:12px;"><i class="ph-bold ph-warning-circle"></i></div>
-                        <span style="color:#d4d4d8; font-size:0.88rem;">Sự cố khác</span>
+                    
+                </div>
+            </div>
+
+
+            <!-- 3. KÝ HIỆU VÙNG CẢNH BÁO TRÊN BẢN ĐỒ -->
+            <div class="panel-card">
+                <h4 style="color:#ffffff; font-weight:700; margin-bottom:10px;">
+                    <i class="ph-bold ph-map-pin" style="color:#a78bfa; margin-right:6px;"></i> Ký Hiệu Trực Quan Bản Đồ
+                </h4>
+                <div style="display:flex; flex-direction:column; gap:8px; font-size:0.82rem;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:20px; height:20px; border-radius:50%; background:rgba(59,130,246,0.3); border:2px solid #3b82f6; flex-shrink:0;"></div>
+                        <span style="color:#cbd5e1;"><b>Vùng ngập lịch sử:</b> Khu vực hay ngập được AI & cộng đồng tổng hợp</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:20px; height:20px; border-radius:50%; background:rgba(249,115,22,0.3); border:2px solid #f97316; flex-shrink:0;"></div>
+                        <span style="color:#cbd5e1;"><b>Vùng kẹt xe lịch sử:</b> Nút giao hay ùn ứ vào giờ cao điểm</span>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:20px; height:20px; border-radius:50%; border:2px dashed #38bdf8; flex-shrink:0;"></div>
+                        <span style="color:#cbd5e1;"><b>Vòng Radar 500m:</b> Bán kính cảnh báo nguy hiểm quanh GPS của bạn</span>
                     </div>
                 </div>
             </div>

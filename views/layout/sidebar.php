@@ -21,13 +21,9 @@
         <div class="sidebar-body" style="flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; display: flex; flex-direction: column;">
             <div class="sidebar-menu">
     
-                <a href="#" class="menu-item" onclick="openSubPanel('Chú giải chuẩn 4 cấp', 'legend'); return false;">
+                <a href="#" class="menu-item" onclick="openSubPanel('Chú giải', 'legend'); return false;">
                     <i class="ph ph-list-dashes"></i>
-                    <span>Chú giải chuẩn 4 cấp</span>
-                </a>
-                <a href="#" class="menu-item" onclick="openSubPanel('Điểm nóng giao thông', 'news'); return false;">
-                    <i class="ph ph-article"></i>
-                    <span>Điểm nóng giao thông</span>
+                    <span>Chú giải</span>
                 </a>
                 <a href="#" class="menu-item" onclick="openSubPanel('Radar cảnh báo GPS', 'follow'); return false;">
                     <i class="ph-bold ph-radar" style="color: #38bdf8;"></i>
@@ -42,7 +38,7 @@
                 </a>
                 <a href="#" class="menu-item" onclick="openSubPanel('Hồ sơ & Đổi mật khẩu', 'profile'); return false;">
                     <i class="ph-bold ph-user-gear" style="color: #34d399;"></i>
-                    <span>Hồ sơ & Bảo mật</span>
+                    <span>Bảo mật</span>
                 </a>
                 <?php endif; ?>
             </div>

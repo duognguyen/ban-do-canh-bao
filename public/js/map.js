@@ -23,7 +23,7 @@ let userMarker = null;
 let selectedMarker = null; // Điểm ghim khi người dùng bấm chọn vị trí trên bản đồ
 window.currentReports = [];
 window.floodHistoryReports = []; // Lưu lịch sử điểm ngập trong 30 ngày gần nhất
-window.trafficHistoryReports = []; // Lưu lịch sử điểm kẹt xe trong 90 ngày gần nhất
+window.trafficHistoryReports = []; // Lưu lịch sử điểm kẹt xe trong 30 ngày gần nhất
 window.forceRushHourMode = false;  // Cho phép bật thử nghiệm Giờ cao điểm bất kỳ lúc nào
 window.currentFilter = 'all'; // 'all', 'ngap_nuoc', 'ket_xe'
 window.userLocation = { lat: savedLat, lng: savedLng };
@@ -171,13 +171,13 @@ map.on('click', function(e) {
     }
 });
 
-// 6. Tải dữ liệu các điểm cảnh báo, lịch sử rốn ngập (30 ngày) & điểm đen kẹt xe (90 ngày)
+// 6. Tải dữ liệu các điểm cảnh báo, lịch sử rốn ngập (30 ngày) & điểm đen kẹt xe (30 ngày)
 async function loadReports() {
     try {
         const [resActive, resFloodHist, resTrafficHist] = await Promise.all([
             fetch('api/reports.php'),
             fetch('api/reports.php?flood_history=1&days=30'),
-            fetch('api/reports.php?traffic_history=1&days=90')
+            fetch('api/reports.php?traffic_history=1&days=30')
         ]);
         const jsonActive = await resActive.json();
         const jsonFloodHist = await resFloodHist.json();
@@ -315,9 +315,31 @@ function addSingleReportMarker(r) {
 
     const marker = L.marker([lat, lng], { icon: customIcon });
 
-    const typeBadge = isFlood
-        ? `<span style="background: rgba(2, 132, 199, 0.2); color: #38bdf8; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">🌊 NGẬP NƯỚC</span>`
-        : `<span style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">🚦 KẸT XE</span>`;
+        const typeBadge = isFlood
+        ? `<span style="background: rgba(2, 132, 199, 0.2); color: #38bdf8; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">🌊 NGẬP NƯỚC</span>`
+        : `<span style="background: rgba(249, 115, 22, 0.2); color: #fb923c; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem;">🚦 KẸT XE</span>`;
+
+    // Hiển thị chi tiết Cấp độ cảnh báo thực tế
+    let severityBadge = '';
+    const sev = r.severity || 'vua';
+
+    if (isFlood) {
+        if (sev === 'nhe') {
+            severityBadge = `<span style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">💧 Mắt cá (<20cm)</span>`;
+        } else if (sev === 'nghiem_trong') {
+            severityBadge = `<span style="background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.5); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">🚨 Ngang yên (>40cm)</span>`;
+        } else {
+            severityBadge = `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">⚠️ Nửa bánh (20-40cm)</span>`;
+        }
+    } else {
+        if (sev === 'nhe') {
+            severityBadge = `<span style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">🚗 Đi chậm (15-25 km/h)</span>`;
+        } else if (sev === 'nghiem_trong') {
+            severityBadge = `<span style="background: rgba(239, 68, 68, 0.25); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.5); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">⛔ Tắc nghẽn (<5 km/h)</span>`;
+        } else {
+            severityBadge = `<span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.74rem;">⚠️ Ùn ứ nặng (5-15 km/h)</span>`;
+        }
+    }
 
     const titleText = r.address_text || r.title || 'Điểm sự cố';
     const descText = r.description || 'Không có mô tả chi tiết.';
@@ -326,11 +348,23 @@ function addSingleReportMarker(r) {
     const timeText = r.created_at || 'Vừa xong';
     const reporter = r.username ? `Người báo: <b>${r.username}</b>` : '';
 
+    // Khung hiển thị ảnh chụp hiện trường (nếu có)
+    const imageHtml = r.image_url 
+        ? `<div style="margin: 8px 0; border-radius: 8px; overflow: hidden; max-height: 160px; background: #18181b; border: 1px solid #3f3f46;">
+               <img src="${r.image_url}" alt="Ảnh hiện trường" style="width: 100%; height: auto; max-height: 160px; object-fit: cover; display: block; cursor: pointer;" onclick="window.open('${r.image_url}', '_blank')" title="Bấm vào để xem ảnh gốc kích thước lớn">
+           </div>` 
+        : '';
+
     const popupHtml = `
-        <div style="font-size: 0.9rem; line-height: 1.5; min-width: 200px;">
-            <div style="margin-bottom: 6px;">${typeBadge}</div>
+        <div style="font-size: 0.9rem; line-height: 1.5; min-width: 220px; max-width: 270px;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;">
+                ${typeBadge}
+                ${severityBadge}
+            </div>
             <b style="color: white; font-size: 0.98rem; display: block; margin-bottom: 4px;">${titleText}</b>
+            ${imageHtml}
             <p style="margin: 4px 0 8px 0; color: #a1a1aa; font-size: 0.85rem;">${descText}</p>
+   
             <div style="font-size: 0.75rem; color: #71717a; margin-bottom: 8px;">
                 ${reporter ? reporter + ' • ' : ''}${timeText}
             </div>
@@ -504,8 +538,8 @@ function renderHistoricalFloodZones(historyReports) {
         const centerLng = sumLng / cluster.length;
 
         // Quy tắc kiểm chứng gần nhất: Nếu điểm ngập mới nhất trong cụm đã cách đây > 20 ngày
-        // (tức gần 3 tuần qua không còn ai báo ngập), khả năng đường đã sửa xong -> bỏ qua
-        if (minDaysAgo > 20 && minDaysAgo !== 999) return;
+        // (tức gần 4 tuần qua không còn ai báo ngập), khả năng đường đã sửa xong -> bỏ qua
+        if (minDaysAgo > 30 && minDaysAgo !== 999) return;
 
         activeZones.push({ lat: centerLat, lng: centerLng, radius: WARNING_ZONE_RADIUS });
 
@@ -583,7 +617,7 @@ function renderHistoricalTrafficZones(historyReports) {
     const historyClusters = groupReportsIntoZones(historyReports, WARNING_ZONE_RADIUS);
 
     historyClusters.forEach((cluster) => {
-        // Chỉ những khu vực có > 5 báo cáo kẹt xe (>= 6) trong 90 ngày qua mới được nhớ là "Điểm đen kẹt xe"
+        // Chỉ những khu vực có > 5 báo cáo kẹt xe (>= 6) trong 30 ngày qua mới được nhớ là "Điểm đen kẹt xe"
         if (cluster.length <= 5) return;
 
         let sumLat = 0, sumLng = 0;
@@ -599,9 +633,9 @@ function renderHistoricalTrafficZones(historyReports) {
         const centerLat = sumLat / cluster.length;
         const centerLng = sumLng / cluster.length;
 
-        // Quy tắc kiểm chứng hạ tầng: Nếu suốt 45 ngày (1.5 tháng) qua không còn ai báo kẹt xe tại đây,
+        // Quy tắc kiểm chứng hạ tầng: Nếu suốt 30 ngày qua không còn ai báo kẹt xe tại đây,
         // khả năng đường đã được mở rộng / phân luồng lại -> bỏ qua không cảnh báo nữa
-        if (minDaysAgo > 45 && minDaysAgo !== 999) return;
+        if (minDaysAgo > 30 && minDaysAgo !== 999) return;
 
         activeZones.push({ lat: centerLat, lng: centerLng, radius: WARNING_ZONE_RADIUS });
 
@@ -649,7 +683,7 @@ function renderHistoricalTrafficZones(historyReports) {
                     ${sampleAddress}
                 </b>
                 <p style="margin: 4px 0 8px 0; color: #d4d4d8; font-size: 0.82rem;">
-                    Khu vực này đã ghi nhận <b style="color:#fb923c;">${cluster.length} lượt báo cáo ùn tắc</b> trong <b>90 ngày qua</b> (lần gần nhất: <b>${lastTimeText}</b>).
+                    Khu vực này đã ghi nhận <b style="color:#fb923c;">${cluster.length} lượt báo cáo ùn tắc</b> trong <b>30 ngày qua</b> (lần gần nhất: <b>${lastTimeText}</b>).
                 </p>
                 <div style="padding: 8px; background: rgba(249, 115, 22, 0.15); border: 1px solid rgba(249, 115, 22, 0.4); border-radius: 8px; color: #fdba74; font-size: 0.79rem;">
                     ⚠️ <b>Cảnh báo ${rushStatus.label}:</b> Đây là điểm đen thường xuyên kẹt xe vào khung giờ này. Khuyến cáo chọn lộ trình thay thế!
@@ -697,7 +731,7 @@ function renderMarkers(reports) {
         activeFloodZones = renderHistoricalFloodZones(window.floodHistoryReports || []);
     }
 
-    // 2. CHỈ hiển thị Vùng Điểm Đen Kẹt Xe (90 ngày) khi ĐANG TRONG GIỜ CAO ĐIỂM
+    // 2. CHỈ hiển thị Vùng Điểm Đen Kẹt Xe (30 ngày) khi ĐANG TRONG GIỜ CAO ĐIỂM
     let activeTrafficZones = [];
     if (window.currentFilter === 'all' || window.currentFilter === 'ket_xe') {
         activeTrafficZones = renderHistoricalTrafficZones(window.trafficHistoryReports || []);
@@ -853,4 +887,261 @@ document.addEventListener('DOMContentLoaded', () => {
         loadWeatherData(savedLat, savedLng);
     }
     setInterval(loadReports, 25000);
+});
+
+// ==========================================================================
+// 12. TÌM KIẾM ĐƯỜNG & ĐỊA ĐIỂM TRÊN BẢN ĐỒ (OPENSTREETMAP NOMINATIM)
+// ==========================================================================
+let searchResultMarker = null;
+let lastSearchResults = [];
+
+async function searchLocationOnMap() {
+    const input = document.getElementById('mapSearchInput');
+    if (!input) return;
+
+    const query = input.value.trim();
+    if (!query) {
+        if (typeof showToast === 'function') {
+            showToast('Vui lòng nhập tên đường hoặc địa điểm cần tìm!', false);
+        }
+        input.focus();
+        return;
+    }
+
+    try {
+        if (typeof showToast === 'function') {
+            showToast(`Đang tìm kiếm "${query}" tại Nha Trang...`, true);
+        }
+
+        // Tọa độ trung tâm TP. Nha Trang để ưu tiên bán kính tìm kiếm
+        const centerLat = window.userLocation?.lat || 12.2458;
+        const centerLng = window.userLocation?.lng || 109.1943;
+
+        let results = [];
+
+        // 1. Thử tìm kiếm với Photon API (Hỗ trợ CORS mượt mà, ưu tiên Nha Trang)
+        try {
+            const photonUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lat=${centerLat}&lon=${centerLng}&limit=6&lang=default`;
+            const pRes = await fetch(photonUrl);
+            if (pRes.ok) {
+                const pData = await pRes.json();
+                if (Array.isArray(pData.features) && pData.features.length > 0) {
+                    results = pData.features.map(f => {
+                        const p = f.properties || {};
+                        const lat = f.geometry.coordinates[1];
+                        const lon = f.geometry.coordinates[0];
+                        const parts = [p.name, p.street, p.district, p.city || 'Nha Trang', p.state].filter(Boolean);
+                        return {
+                            lat: lat,
+                            lon: lon,
+                            display_name: parts.join(', '),
+                            name: p.name || p.street || query
+                        };
+                    });
+                }
+            }
+        } catch (photonErr) {
+            console.warn('Photon API gặp sự cố, chuyển sang OpenStreetMap dự phòng:', photonErr);
+        }
+
+        // 2. Dự phòng: Nếu Photon không có kết quả, gọi OpenStreetMap Nominatim
+        if (results.length === 0) {
+            const nhaTrangViewbox = '109.10,12.35,109.28,12.15';
+            const osmUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=vn&viewbox=${nhaTrangViewbox}&bounded=0&limit=5&addressdetails=1`;
+            const oRes = await fetch(osmUrl, { headers: { 'Accept-Language': 'vi' } });
+            if (oRes.ok) {
+                const oData = await oRes.json();
+                if (Array.isArray(oData)) results = oData;
+            }
+        }
+
+        if (results.length === 0) {
+            hideSearchSuggestions();
+            if (typeof showToast === 'function') {
+                showToast('Không tìm thấy đường hoặc địa điểm phù hợp!', false);
+            }
+            return;
+        }
+
+        lastSearchResults = results;
+
+        // Tự động ghim và bay tới kết quả khớp nhất đầu tiên
+        selectSearchResult(0);
+
+        // Hiển thị danh sách gợi ý dưới thanh tìm kiếm nếu có nhiều hơn 1 địa điểm
+        if (results.length > 1) {
+            renderSearchSuggestions(results);
+        } else {
+            hideSearchSuggestions();
+        }
+    } catch (err) {
+        console.warn('Lỗi tìm kiếm địa điểm:', err);
+        if (typeof showToast === 'function') {
+            showToast('Không thể kết nối dịch vụ tìm kiếm bản đồ!', false);
+        }
+    }
+}
+
+function selectSearchResult(index) {
+    const place = lastSearchResults[index];
+    if (!place) return;
+
+    if (typeof toggleMobileSearch === 'function') {
+        toggleMobileSearch(false);
+    }
+
+    const lat = parseFloat(place.lat);
+    const lng = parseFloat(place.lon);
+    const displayName = place.display_name || 'Địa điểm tìm kiếm';
+    const shortName = displayName.split(',').slice(0, 2).join(', ');
+
+    hideSearchSuggestions();
+
+    // Xóa ghim tìm kiếm cũ nếu có
+    if (searchResultMarker) {
+        map.removeLayer(searchResultMarker);
+    }
+
+    // Quét xem trong bán kính 300m quanh địa điểm tìm kiếm có sự cố ngập/kẹt xe nào không
+    let nearbyFloods = 0;
+    let nearbyTraffics = 0;
+    if (Array.isArray(window.currentReports)) {
+        window.currentReports.forEach(r => {
+            const rLat = parseFloat(r.latitude);
+            const rLng = parseFloat(r.longitude);
+            if (!isNaN(rLat) && !isNaN(rLng)) {
+                const dist = getDistanceInMeters(lat, lng, rLat, rLng);
+                if (dist <= 300) {
+                    if (r.type === 'ngap_nuoc' || r.report_type === 'flood') nearbyFloods++;
+                    else nearbyTraffics++;
+                }
+            }
+        });
+    }
+
+    const totalNearby = nearbyFloods + nearbyTraffics;
+    const statusHtml = totalNearby > 0
+        ? `<div style="margin-top:6px; padding:6px 8px; background:rgba(239,68,68,0.18); border:1px solid rgba(239,68,68,0.45); border-radius:6px; color:#fca5a5; font-size:0.78rem;">
+               ⚠️ <b>Cảnh báo:</b> Có <b>${totalNearby} sự cố</b> cách điểm này &lt;300m (${nearbyFloods} ngập, ${nearbyTraffics} kẹt xe)!
+           </div>`
+        : `<div style="margin-top:6px; padding:6px 8px; background:rgba(16,185,129,0.16); border:1px solid rgba(16,185,129,0.4); border-radius:6px; color:#6ee7b7; font-size:0.78rem;">
+               ✅ Khu vực bán kính 300m quanh đây hiện thông thoáng.
+           </div>`;
+
+    const searchPinIcon = L.divIcon({
+        className: 'custom-pin-search',
+        html: `
+            <div style="width:28px; height:28px; background:#8b5cf6; border-radius:50% 50% 50% 0; transform:rotate(-45deg); border:2.5px solid white; box-shadow:0 4px 12px rgba(139,92,246,0.55); position:relative;">
+                <div style="width:9px; height:9px; background:white; border-radius:50%; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%);"></div>
+            </div>
+        `,
+        iconSize: [28, 28],
+        iconAnchor: [14, 28]
+    });
+
+    const safeAddress = shortName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+    const popupHtml = `
+        <div style="font-size:0.88rem; line-height:1.45; min-width:220px; max-width:265px;">
+            <span style="background:rgba(139,92,246,0.22); color:#c4b5fd; padding:2px 8px; border-radius:6px; font-weight:700; font-size:0.72rem;">
+                🔍 KẾT QUẢ TÌM KIẾM
+            </span>
+            <b style="color:white; font-size:0.95rem; display:block; margin:6px 0 3px 0;">${shortName}</b>
+            <p style="color:#a1a1aa; font-size:0.76rem; margin:0;">${displayName}</p>
+            ${statusHtml}
+            <button type="button" onclick="reportAtSearchedLocation(${lat.toFixed(6)}, ${lng.toFixed(6)}, '${safeAddress}')" style="margin-top:8px; width:100%; padding:7px 10px; background:#2563eb; color:white; border:none; border-radius:7px; font-size:0.78rem; font-weight:700; cursor:pointer;">
+                📢 Báo sự cố tại địa điểm này
+            </button>
+        </div>
+    `;
+
+    const marker = L.marker([lat, lng], { icon: searchPinIcon })
+        .addTo(map)
+        .bindPopup(popupHtml);
+
+    // Khi người dùng bấm dấu [X] để đóng popup kết quả tìm kiếm, tự động xóa ghim tìm kiếm khỏi bản đồ
+    marker.on('popupclose', function() {
+        if (searchResultMarker === marker) {
+            map.removeLayer(marker);
+            searchResultMarker = null;
+        }
+    });
+
+    searchResultMarker = marker;
+
+    map.flyTo([lat, lng], 16.5, { animate: true, duration: 1.2 });
+    setTimeout(() => {
+        if (searchResultMarker) searchResultMarker.openPopup();
+    }, 600);
+}
+
+// Chuyển nhanh tọa độ & tên đường vừa tìm kiếm vào Form Báo Cáo Sự Cố
+function reportAtSearchedLocation(lat, lng, addressName) {
+    const latInput = document.getElementById('report_lat');
+    const lngInput = document.getElementById('report_lng');
+    const addressInput = document.getElementById('report_address');
+
+    if (latInput) latInput.value = lat;
+    if (lngInput) lngInput.value = lng;
+    if (addressInput) addressInput.value = addressName;
+
+    if (typeof openReportPanel === 'function') {
+        openReportPanel();
+    }
+}
+
+// Hiển thị danh sách các địa điểm gợi ý ngay dưới thanh tìm kiếm
+function renderSearchSuggestions(results) {
+    hideSearchSuggestions();
+    const container = document.querySelector('.map-search-container');
+    if (!container) return;
+
+    container.style.position = 'relative';
+
+    const dropdown = document.createElement('div');
+    dropdown.id = 'map-search-dropdown';
+    dropdown.style.cssText = `
+        position: absolute;
+        top: 46px;
+        left: 0;
+        width: 290px;
+        max-width: 85vw;
+        background: rgba(24, 24, 27, 0.96);
+        backdrop-filter: blur(10px);
+        border: 1px solid #3f3f46;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+        z-index: 9999;
+        overflow: hidden;
+    `;
+
+    dropdown.innerHTML = results.map((item, idx) => {
+        const parts = (item.display_name || '').split(',');
+        const title = parts.slice(0, 2).join(', ');
+        const sub = parts.slice(2, 5).join(', ');
+        return `
+            <div onclick="selectSearchResult(${idx})" style="padding:9px 12px; border-bottom:1px solid #27272a; cursor:pointer; transition:background 0.15s;" onmouseover="this.style.background='#27272a'" onmouseout="this.style.background='transparent'">
+                <div style="color:white; font-size:0.83rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    📍 ${title}
+                </div>
+                <div style="color:#a1a1aa; font-size:0.73rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">
+                    ${sub}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.appendChild(dropdown);
+}
+
+function hideSearchSuggestions() {
+    const existing = document.getElementById('map-search-dropdown');
+    if (existing) existing.remove();
+}
+
+document.addEventListener('click', function(e) {
+    const container = document.querySelector('.map-search-container');
+    if (container && !container.contains(e.target)) {
+        hideSearchSuggestions();
+    }
 });

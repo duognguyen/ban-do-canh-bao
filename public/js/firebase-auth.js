@@ -10,6 +10,8 @@ import {
     getAuth, 
     GoogleAuthProvider, 
     signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     signOut
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
@@ -37,7 +39,31 @@ isAnalyticsSupported().then(supported => {
 // Khởi tạo Firebase Auth & Google Auth Provider
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-
+// Tự động kiểm tra và xử lý kết quả đăng nhập nếu vừa chuyển hướng (Redirect) trên điện thoại
+getRedirectResult(auth).then(async (result) => {
+    if (result && result.user) {
+        const user = result.user;
+        const idToken = await user.getIdToken();
+        const payload = {
+            id_token: idToken,
+            email: user.email || '',
+            name: user.displayName || '',
+            avatar: user.photoURL || '',
+            google_id: user.uid || ''
+        };
+        const res = await fetch('api/google_login.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            window.location.href = data.data.role === 'admin' ? 'index.php?route=admin_dashboard' : 'index.php?route=home';
+        }
+    }
+}).catch((err) => {
+    console.error('Lỗi Redirect Auth:', err);
+});
 // Luôn hiển thị hộp thoại chọn tài khoản Google (Select Account)
 provider.setCustomParameters({
     prompt: 'select_account'
@@ -64,6 +90,13 @@ window.loginWithFirebaseGoogle = async function(mode = 'login') {
     notify('Đang mở bảng chọn tài khoản Google...', true);
 
     try {
+
+        const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        if (isMobile) {
+            notify('Đang chuyển hướng đến trang Google...', true);
+            await signInWithRedirect(auth, provider);
+            return;
+        }
         // Mở popup chọn tài khoản Google qua Firebase Auth
         const result = await signInWithPopup(auth, provider);
         const user = result.user;

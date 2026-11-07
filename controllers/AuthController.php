@@ -638,8 +638,8 @@ class AuthController {
     public function updateProfile(int $userId, array $in): array
     {
         $fullName = trim($in['full_name'] ?? '');
-        $phone    = trim($in['phone'] ?? '');
-        $this->users->updateProfile($userId, $fullName, $phone);
+    
+        $this->users->updateProfile($userId, $fullName);
         $user = $this->users->findById($userId);
         return ['ok' => true, 'message' => 'Cập nhật thông tin thành công!', 'data' => $this->publicUser($user)];
     }

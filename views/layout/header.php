@@ -41,22 +41,22 @@ if (file_exists($googleConfigFile)) {
 </head>
 <body>
 
-    <!-- Cụm nút mở Menu góc trên trái & Thanh tìm kiếm địa điểm trên bản đồ -->
-    <div class="top-left-actions" style="display: flex; align-items: center; gap: 8px;">
+    <!-- HÀNG 1: CỤM NÚT MENU GÓC TRÊN TRÁI & THANH TÌM KIẾM ĐỊA ĐIỂM -->
+    <div class="top-left-actions">
         <button class="btn-menu" onclick="toggleSidebar()" title="Mở danh mục menu">
             <i class="ph-bold ph-list"></i>
         </button>
-        <div class="map-search-container" style="display: flex; align-items: center; background: rgba(24, 24, 27, 0.9); backdrop-filter: blur(8px); border: 1px solid #3f3f46; border-radius: 9999px; padding: 4px 10px 4px 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.3); height: 40px;">
+        <div class="map-search-container" id="mapSearchContainer">
             <i class="ph-bold ph-magnifying-glass" style="color: #94a3b8; font-size: 1rem; margin-right: 6px;"></i>
-            <input type="text" id="mapSearchInput" placeholder="Tìm đường, địa điểm..." style="background: transparent; border: none; outline: none; color: white; font-size: 0.85rem; width: 175px;" onkeydown="if(event.key==='Enter') searchLocationOnMap()">
-            <button type="button" onclick="searchLocationOnMap()" style="background: #2563eb; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-left: 4px; transition: transform 0.15s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'" title="Tìm kiếm trên bản đồ">
+            <input type="text" id="mapSearchInput" placeholder="Tìm đường, địa điểm..." onkeydown="if(event.key==='Enter') searchLocationOnMap()">
+            <button type="button" class="btn-search-submit" onclick="searchLocationOnMap()" title="Tìm kiếm trên bản đồ">
                 <i class="ph-bold ph-arrow-right" style="font-size: 0.85rem;"></i>
             </button>
         </div>
     </div>
 
-    <!-- Thanh thông báo trạng thái & Bộ lọc ở giữa trên -->
-    <div class="top-center-bar">
+    <!-- HÀNG 2 TRÊN MOBILE / CỤM GÓC TRÊN PHẢI TRÊN DESKTOP: THỜI TIẾT, TRẠNG THÁI & BỘ LỌC -->
+    <div class="top-center-bar" id="topCenterBar">
         <div class="notification-pill" onclick="openSidebarNews()" title="Xem danh sách tin mới">
             <span class="pulse-dot green" id="status-dot"></span>
             <span id="status-text">Đang tải trạng thái...</span>

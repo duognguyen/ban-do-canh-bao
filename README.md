@@ -1,72 +1,152 @@
-# 🌊 Bản Đồ Cảnh Báo Điểm Ngập Và Kẹt Xe Công Cộng
+# 🌊 UrbanGuard - Bản Đồ Cảnh Báo Điểm Ngập & Kẹt Xe Công Cộng Thời Gian Thực
+> **Hệ thống giám sát giao thông đô thị và cảnh báo thiên tai thời gian thực dựa trên nền tảng bản đồ số GIS kết hợp dữ liệu đám đông (Crowdsourcing) tại TP. Nha Trang.**
 
-Chào mừng bạn đến với **Bản Đồ Cảnh Báo Giao Thông & Ngập Lụt** – nền tảng trực tuyến hỗ trợ người dân tra cứu, theo dõi và cập nhật tình hình ngập nước cũng như ùn tắc giao thông theo thời gian thực. 
-
-Trang web được xây dựng với mục tiêu giúp người tham gia giao thông chủ động nắm bắt tình hình đường sá, từ đó lựa chọn lộ trình di chuyển an toàn, tiết kiệm thời gian và tránh các khu vực nguy hiểm khi trời mưa lớn hoặc giờ cao điểm.
-
----
-
-## ✨ Các tính năng nổi bật của trang web
-
-### 1. 🗺️ Bản đồ cảnh báo trực quan theo thời gian thực
-* Hiển thị trực tiếp các điểm đang xảy ra ngập lụt hoặc kẹt xe ngay trên giao diện bản đồ số.
-* Phân loại mức độ nghiêm trọng của từng điểm cảnh báo thông qua hệ thống màu sắc và biểu tượng trực quan.
-* Tích hợp thanh thống kê nhanh số lượng điểm cảnh báo đang hoạt động để người dùng dễ dàng bao quát tình hình chung.
-
-### 2. 🔔 Theo dõi khu vực & Tin tức mới nhất
-* **Tin mới:** Cập nhật liên tục các thông báo, diễn biến mới nhất về tình hình thời tiết, ngập lụt và giao thông tại các tuyến đường trọng điểm.
-* **Theo dõi khu vực:** Cho phép người dùng lưu và nhận thông báo nhanh về tình trạng giao thông tại các khu vực hay di chuyển (như đường đi làm, đi học, khu vực sinh sống).
-
-### 3. 🤝 Đóng góp từ cộng đồng & Hệ thống Điểm Uy Tín
-* Người dân có thể đăng ký tài khoản để trực tiếp gửi báo cáo về các điểm ngập hoặc ùn tắc mới phát sinh mà mình bắt gặp trên đường.
-* **Cơ chế Điểm Uy Tín (Reputation Score):** Mỗi tài khoản người dùng sẽ có điểm uy tín khởi tạo (mặc định **100 điểm**). Cơ chế này giúp sàng lọc thông tin chính xác, ngăn chặn tình trạng báo cáo sai sự thật (spam) gây hoang mang cho người tham gia giao thông.
-
-### 4. 🛡️ Hệ thống Quản trị & Kiểm duyệt (Dành cho Admin)
-* Quản trị viên theo dõi, xác thực thông tin và quản lý danh sách tài khoản người dùng trên hệ thống.
-* Hỗ trợ khóa các tài khoản cố tình báo cáo giả mạo làm giảm điểm uy tín, đồng thời có thể mở khóa và khôi phục lại điểm uy tín cho những thành viên tích cực.
+🌐 **Website chính thức (Live Production):** [https://urbanguard-nhatrang.infinityfreeapp.com](https://urbanguard-nhatrang.infinityfreeapp.com)
 
 ---
 
-## 📖 Hướng dẫn sử dụng dành cho Người dùng
-
-### Bước 1: Tra cứu thông tin trên Bản đồ chính
-1. Ngay khi truy cập vào trang web, bạn có thể phóng to, thu nhỏ hoặc kéo bản đồ đến tuyến đường mình sắp di chuyển.
-2. Quan sát các biểu tượng ghim trên bản đồ để biết vị trí nào đang bị ngập hoặc kẹt xe.
-3. Nhấn vào biểu tượng đó để xem thông tin chi tiết (mức độ ngập, thời gian ghi nhận, tình trạng di chuyển).
-
-### Bước 2: Sử dụng Thanh điều hướng (Menu bên trái)
-Nhấn vào nút mở thanh Menu ở góc trái màn hình để sử dụng các tiện ích hỗ trợ:
-* **📋 Chú giải:** Xem giải thích chi tiết ý nghĩa của từng loại biểu tượng và màu sắc cảnh báo trên bản đồ.
-* **📰 Tin mới:** Đọc các bản tin tổng hợp nhanh về tình hình giao thông và các tuyến đường đang bị chia cắt.
-* **🔔 Theo dõi:** Thiết lập danh sách các tuyến đường quen thuộc để kiểm tra nhanh mỗi ngày.
-* **❓ Hướng dẫn & Cập nhật mới:** Xem mẹo sử dụng hệ thống hiệu quả và các tính năng mới vừa được đội ngũ phát triển bổ sung.
-
-### Bước 3: Đăng nhập và Tương tác cộng đồng
-1. Nhấn vào mục **Đăng nhập / Đăng ký** ở góc dưới cùng của thanh Menu bên trái.
-2. Tạo một tài khoản mới (chỉ mất khoảng 30 giây) hoặc đăng nhập bằng tài khoản sẵn có.
-3. Sau khi đăng nhập, bạn có thể gửi báo cáo điểm ngập/kẹt xe mới hoặc vào mục **💬 Góp ý** để gửi phản hồi giúp hệ thống ngày càng hoàn thiện hơn.
+## 📌 1. Giới thiệu tổng quan
+**UrbanGuard** là giải pháp công nghệ trực tuyến hỗ trợ người dân và cơ quan quản lý đô thị nắm bắt tức thời tình trạng ngập lụt cục bộ do triều cường/mưa bão và các điểm ùn tắc giao thông giờ cao điểm. Nhờ sự kết hợp giữa bản đồ số mã nguồn mở, dữ liệu khí tượng Open-Meteo và cơ chế xác minh cộng đồng, hệ thống giúp người tham gia giao thông lựa chọn lộ trình an toàn, giảm thiểu thiệt hại về người và phương tiện.
 
 ---
 
-## ⭐ Quy định về Điểm Uy Tín người dùng
+## ✨ 2. Các tính năng cốt lõi
 
-Để xây dựng một cộng đồng giao thông văn minh và đáng tin cậy, trang web áp dụng quy tắc tính điểm như sau:
+### 🗺️ Bản đồ số tương tác (GIS Interactive Map)
+* **Trực quan hóa sự cố:** Hiển thị tức thời các điểm ngập nước (xanh dương) và kẹt xe (cam) với 4 cấp độ nghiêm trọng (Nhẹ $\rightarrow$ Nghiêm trọng) cùng ảnh chụp hiện trường.
+* **Vùng nguy hiểm lịch sử:** Tự động tổng hợp và vẽ các vùng cảnh báo nguy hiểm tiềm tàng dựa trên mật độ sự cố trong quá khứ.
+* **Thời tiết thời gian thực:** Đồng bộ nhiệt độ và icon thời tiết từ Open-Meteo API.
+* **Radar định vị GPS 500m:** Quét vị trí thực tế của người dùng và phát cảnh báo rung/âm thanh khi tiến vào vùng nguy hiểm.
+* **Tìm kiếm địa điểm thông minh:** Tích hợp Photon / OpenStreetMap API, tự động quét bán kính 300m quanh điểm tìm kiếm để đánh giá độ an toàn trước khi di chuyển.
 
-| Trạng thái / Hành động | Ý nghĩa & Quyền lợi |
-| :--- | :--- |
-| **🟢 Tài khoản mới (100⭐)** | Mọi người dùng khi mới tạo tài khoản đều được cấp 100 điểm uy tín và ở trạng thái **Hoạt động**. |
-| **📈 Báo cáo chính xác** | Khi bạn gửi thông tin cảnh báo đúng sự thật, giúp ích cho cộng đồng, độ tin cậy của tài khoản sẽ được duy trì và đánh giá cao. |
-| **🔴 Báo cáo sai / Spam** | Các tài khoản cố tình tạo cảnh báo giả mạo nhiều lần sẽ bị trừ điểm uy tín và chuyển sang trạng thái **Đã khóa** (không thể tiếp tục đăng tải thông tin). |
-| **🔄 Khôi phục tài khoản** | Nếu bị khóa nhầm hoặc cam kết khắc phục, Quản trị viên (Admin) sẽ xem xét mở khóa và khôi phục lại mức **100 điểm uy tín** ban đầu. |
+### 📢 Quy trình Báo cáo 3 chạm & Kiểm duyệt tin giả (Crowdsourcing)
+* **Báo cáo nhanh chóng:** Chỉ mất 10 giây để chọn loại sự cố, mức độ, định vị tọa độ và tải ảnh hiện trường.
+* **Xác minh cộng đồng (Upvote/Downvote):** Người dân đi ngang qua có thể bấm *"Đúng vậy (+1)"* hoặc *"Đã hết / Báo sai (-1)"*.
+* **Tự động lọc tin giả & Chế tài Điểm uy tín (Reputation Score):** Bài đăng nhận nhiều lượt báo sai sẽ tự động bị ẩn. Thành viên đăng tin giả bị trừ điểm uy tín, tin chính xác được thăng hạng thành viên tin cậy.
+* **Cơ chế tự động hết hạn (Auto-expiry):** Sự cố tự động đóng sau 4 giờ (ngập nước) hoặc 1 giờ (kẹt xe) nếu không có lượt xác nhận mới.
+
+### 🔐 Xác thực người dùng đa phương thức
+* Đăng ký tài khoản với bảo mật 2 bước: Gửi mã xác thực **OTP 6 chữ số** về Gmail qua PHPMailer (SMTP).
+* Đăng nhập 1 chạm bằng **Tài khoản Google** qua Google Identity Services & Firebase Auth SDK.
+* Duy trì đăng nhập an toàn 30 ngày (*Remember Me*) qua Cookie mã hóa Token.
+
+### 🛡️ Bảng điều khiển Quản trị viên (Admin Dashboard)
+* Thống kê tổng quan: Số lượng thành viên, tài khoản đang hoạt động, sự cố đang diễn ra.
+* Quản lý phân quyền (User/Admin), can thiệp điểm uy tín, khóa/mở khóa tài khoản spam.
+* **Xuất báo cáo dữ liệu:** Hỗ trợ xuất toàn bộ lịch sử điểm ngập và kẹt xe ra tệp tin **Excel (.xls/csv)** phục vụ công tác quy hoạch đô thị.
+
+### 📱 Thiết kế tối ưu Mobile Responsive 100%
+* Bố cục 2 hàng thông minh trên di động (Hàng 1: Menu & Tìm kiếm; Hàng 2: Trạng thái, Thời tiết & Bộ lọc) không bao giờ bị đè chữ hay tràn viền màn hình.
+* Menu quản trị dạng ngăn kéo trượt (Off-canvas Drawer) mượt mà trên màn hình cảm ứng.
 
 ---
 
-## 👥 Nhóm phát triển dự án
+## 🛠️ 3. Công nghệ sử dụng (Tech Stack)
 
-Dự án được xây dựng và phát triển nhằm mục đích phục vụ cộng đồng, nâng cao an toàn giao thông đô thị:
-
-* **Dương Nguyên** (`@duognguyen`) – Trưởng nhóm phát triển
-* **Nguyễn Quốc Khánh** (`@NguyenQuocKhanh`) – Thành viên phát triển
+* **Frontend:** HTML5, CSS3 (Flexbox/Grid), JavaScript thuần (ES6+ Module), Leaflet.js 1.9+, Phosphor Icons.
+* **Backend:** PHP 8.1+ xây dựng theo mô hình **MVC** (Model - View - Controller), RESTful API (JSON response).
+* **Cơ sở dữ liệu:** MySQL / MariaDB (Prepared Statements chống SQL Injection).
+* **Dịch vụ tích hợp bên thứ ba:**
+  - *OpenStreetMap & CARTO Basemaps:* Bản đồ nền số hóa.
+  - *Photon Komoot Geocoding:* Tìm kiếm đường và địa danh.
+  - *Open-Meteo & RainViewer:* Dữ liệu thời tiết và mây mưa.
+  - *Google Firebase Auth:* Đăng nhập tài khoản Google.
+  - *PHPMailer:* Dịch vụ gửi thư điện tử kích hoạt OTP qua giao thức SMTP.
+* **Hạ tầng Web Hosting:** Máy chủ Linux Apache, Cloud MySQL, chứng chỉ bảo mật SSL/HTTPS.
 
 ---
-*Cảm ơn bạn đã sử dụng và đóng góp thông tin cho Bản Đồ Cảnh Báo Điểm Ngập Và Kẹt Xe Công Cộng. Chúc bạn luôn có những lộ trình di chuyển an toàn và thuận lợi!*
+
+## 📁 4. Cấu trúc thư mục dự án
+
+```text
+ban-do-canh-bao/
+├── api/                      # Các endpoint API RESTful (JSON)
+│   ├── reports.php           # Lấy và tạo báo cáo sự cố
+│   ├── vote.php              # Xử lý bình chọn xác minh cộng đồng
+│   ├── check_email.php       # Kiểm tra trùng lặp email thời gian thực
+│   ├── google_login.php      # Xử lý định danh Google Token
+├── config/                   # Tệp tin cấu hình hệ thống
+│   ├── db.php                # Kết nối CSDL MySQL qua mysqli
+│   ├── mail.php              # Cấu hình SMTP Gmail gửi mã OTP
+│   └── bootstrap.php         # Khởi tạo session và biến toàn cục
+├── controllers/              # Bộ điều hướng nghiệp vụ (Controller)
+│   ├── AuthController.php    # Nghiệp vụ tài khoản, OTP, Google Auth
+│   ├── ReportController.php  # Nghiệp vụ sự cố, upload ảnh, tính điểm uy tín
+│   └── AdminController.php   # Nghiệp vụ quản trị hệ thống
+├── database/                 # Cơ sở dữ liệu
+│   └── schema.sql            # Mã nguồn tạo bảng và dữ liệu mẫu
+├── models/                   # Tương tác CSDL (Model)
+│   ├── UserModel.php         # Truy vấn bảng users
+│   └── ReportModel.php       # Truy vấn bảng reports, report_votes
+├── public/                   # Tài nguyên tĩnh phía Client
+│   ├── css/style.css         # Bảng định kiểu CSS & Responsive Mobile
+│   ├── js/
+│   │   ├── map.js            # Khởi tạo bản đồ, GPS, tìm kiếm, marker
+│   │   ├── api.js            # Thư viện gọi AJAX/Fetch API
+│   │   ├── firebase-auth.js  # Tích hợp Firebase Google Sign-In
+│   │   ├── radar-weather.js  # Widget thời tiết & radar mưa
+│   │   └── sidebar-ui.js     # Điều khiển mở/đóng menu trượt
+│   └── images/               # Thư mục lưu ảnh hiện trường tải lên
+├── views/                    # Giao diện ứng dụng (View)
+│   ├── admin/dashboard.php   # Bảng điều khiển quản trị viên
+│   ├── layout/header.php     # Thanh điều hướng đỉnh & tìm kiếm
+│   ├── layout/sidebar.php    # Thanh danh mục tính năng bên trái
+│   └── ...
+└── index.php                 # Bộ định tuyến trung tâm (Front Controller)
+```
+
+---
+
+## 💻 5. Hướng dẫn cài đặt cục bộ (Local Setup)
+
+### Yêu cầu hệ thống:
+* Đã cài đặt gói **XAMPP** (hỗ trợ PHP 8.1 trở lên và MySQL).
+* Trình duyệt web hiện đại: Chrome, Edge, Firefox, Safari.
+
+### Các bước thiết lập:
+1. **Tải mã nguồn:**
+   Đặt toàn bộ thư mục dự án vào thư mục gốc của máy chủ web:  
+   `C:\xampp\htdocs\ban-do-canh-bao`
+
+2. **Cấu hình Cơ sở dữ liệu:**
+   - Khởi động **Apache** và **MySQL** trên phần mềm XAMPP Control Panel.
+   - Mở trình duyệt truy cập: `http://localhost/phpmyadmin/`
+   - Tạo mới một CSDL có tên: `ban_do_canh_bao` (bảng mã `utf8mb4_unicode_ci`).
+   - Chọn CSDL vừa tạo $\rightarrow$ Bấm tab **Import** (Nhập) $\rightarrow$ Chọn tệp tin `database/schema.sql` $\rightarrow$ Bấm **Execute**.
+
+3. **Kiểm tra thông số kết nối (`config/db.php`):**
+   ```php
+   $host = 'localhost';
+   $user = 'root';
+   $pass = '';
+   $db   = 'ban_do_canh-bao';
+   ```
+
+4. **Khởi chạy ứng dụng:**
+   - Mở trình duyệt và truy cập: `http://localhost/ban-do-canh-bao/`
+
+---
+
+## 🔑 6. Tài khoản thử nghiệm mặc định
+
+| Vai trò (Role) | Tên đăng nhập | Mật khẩu | Quyền hạn |
+| :--- | :--- | :--- | :--- |
+| **Quản trị viên (Admin)** | `admin_super` | `123456` | Toàn quyền quản trị, xóa bài, khóa tài khoản, xuất Excel |
+| **Người dùng (Member)** | Đăng ký mới hoặc bấm **Đăng nhập bằng Google** | - | Báo cáo sự cố, bình chọn kiểm chứng, theo dõi GPS |
+
+---
+
+## 👥 7. Nhóm tác giả thực hiện
+* **Sinh viên thực hiện:**
+  - **guyễn Thái Dương** 
+  - **Nguyễn Quốc Khánh** 
+  - **Lê Quốc Anh**
+  - **Ngô Tấn Thiện**
+* **Giảng viên hướng dẫn:** Thầy/Cô `Nguyễn Hải Triểu`
+* **Đơn vị:** Khoa Công nghệ Thông tin – Trường Đại học Nha Trang
+
+---
+*Dự án được xây dựng vì mục tiêu phi thương mại, đóng góp cho cộng đồng giao thông văn minh và an toàn.*
+
+## 📄 Giấy phép (License)
+Dự án được phân phối dưới giấy phép mã nguồn mở **MIT License**. Chi tiết xem tại tệp tin [LICENSE](LICENSE).

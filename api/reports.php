@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (!empty($_GET['traffic_history'])) {
-        $days = isset($_GET['days']) ? (int)$_GET['days'] : 90;
+        $days = isset($_GET['days']) ? (int)$_GET['days'] : 30;
         respond($ctrl->trafficHistory($days));
     }
     respond($ctrl->list($_GET['type'] ?? 'all'));

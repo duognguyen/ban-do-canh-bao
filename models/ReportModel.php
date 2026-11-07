@@ -9,7 +9,7 @@ class ReportModel {
     }
         // Tự động quét và ẩn các điểm đã quá hạn
     // - Ngập lụt: quá 4 tiếng không có ai xác nhận thêm
-    // - Kẹt xe: quá 2 tiếng không có ai xác nhận thêm
+    // - Kẹt xe: quá 1 tiếng không có ai xác nhận thêm
     public function autoExpireReports(): void {
         $sql = "UPDATE reports 
                 SET status = 'da_ket_thuc' 
@@ -60,7 +60,7 @@ class ReportModel {
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 
-     public function getHistoricalTrafficReports(int $days = 90): array {
+     public function getHistoricalTrafficReports(int $days = 30): array {
         $sql = "SELECT id, type, severity, latitude, longitude, address_text, description, created_at,
                        DATEDIFF(NOW(), created_at) AS days_ago
                 FROM reports
@@ -77,8 +77,8 @@ class ReportModel {
 
         // Trả về id mới (int) hoặc false
     public function createReport($userId, $type, $severity, $latitude, $longitude, $addressText, $description, $imageUrl = null) {
-        // Ngập nước: 4 tiếng | Kẹt xe: 2 tiếng
-        $expireHours = ($type === 'ngap_nuoc') ? 12 : 6;
+        // Ngập nước: 4 tiếng | Kẹt xe: 1 tiếng
+        $expireHours = ($type === 'ngap_nuoc') ? 4 : 1;
 
         $sql = "INSERT INTO reports (user_id, type, severity, latitude, longitude, address_text, description, image_url, confirm_count, reject_count, status, expires_at, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 'dang_dien_ra', DATE_ADD(NOW(), INTERVAL ? HOUR), NOW(), NOW())";

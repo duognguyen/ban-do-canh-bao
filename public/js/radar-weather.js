@@ -227,11 +227,18 @@ async function loadWeatherData(lat = 12.2458, lng = 109.1943) {
             } else if ([45, 48].includes(code)) {
                 iconClass = 'ph-bold ph-cloud-fog';
                 desc = 'Sương mù';
-            } else if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) {
+            } else if ([51, 53, 55, 61, 80].includes(code)) {
+                // Mưa bay / Mưa phùn nhỏ lất phất (0.1 - 0.3mm): Không gây ngập, không tính là đang mưa
+                iconClass = 'ph-bold ph-cloud-sun';
+                desc = 'Có mây, mưa bay nhỏ';
+                rainingNow = false;
+            } else if ([63, 65, 81, 82].includes(code)) {
+                // Mưa vừa đến Mưa to / Mưa rào lớn: Có nguy cơ gây ngập đường phố
                 iconClass = 'ph-bold ph-cloud-rain';
-                desc = 'Đang có mưa';
+                desc = 'Mưa lớn (Nguy cơ ngập)';
                 rainingNow = true;
             } else if ([95, 96, 99].includes(code)) {
+                // Giông bão cực đoan nguy hiểm
                 iconClass = 'ph-bold ph-cloud-lightning';
                 desc = 'Giông bão nguy hiểm';
                 rainingNow = true;
@@ -312,7 +319,7 @@ async function toggleRadarLayer() {
         if (typeof renderMarkers === 'function') {
             renderMarkers(window.currentReports || []);
         }
-        showToast('Đã bật radar mây mưa & dự báo vùng rốn ngập! 🌧️', true);
+        showToast('Đã bật radar mây mưa & dự báo vùng thường xuyên ngập! 🌧️', true);
     } catch (err) {
         console.error('Lỗi tải radar mây mưa:', err);
         showToast('Không thể tải radar mây mưa, vui lòng thử lại sau!', false);
