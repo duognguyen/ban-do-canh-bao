@@ -154,7 +154,52 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
             }
             .card-table {
                 padding: 14px 12px;
-            }
+            }  
+        }
+                  /* Thanh phân trang Pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            margin-top: 16px;
+            border-top: 1px solid #f1f5f9;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .pagination-info {
+            font-size: 0.85rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .page-btn {
+            padding: 5px 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #334155;
+            font-size: 0.84rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .page-btn:hover:not(:disabled) {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        .page-btn.active {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+        .page-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -289,6 +334,7 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
                             </tbody>
                         </table>
                     </div>
+                    <div id="usersPagination" class="pagination-container"></div>
                 </div>
             </div>
 
@@ -321,6 +367,8 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
                             </tbody>
                         </table>
                     </div>
+                    <div id="reportsPagination" class="pagination-container"></div>
+                </div>
                 </div>
             </div>
         </div>
@@ -332,6 +380,11 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
     <script>
         const currentAdminId = <?= (int)($_SESSION['user_id'] ?? 0) ?>;
         let globalUsersList = [];
+        const PAGE_SIZE = 10; // Mỗi trang hiển thị 10 dòng
+        let userCurrentPage = 1;
+        let currentFilteredUsers = [];
+        let globalReportsList = [];
+        let reportCurrentPage = 1;
 
         // Đóng / mở menu sidebar trên điện thoại
         function toggleAdminSidebar() {
@@ -375,19 +428,22 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
                 const activeCount = users.filter(u => u.status === 'active').length;
                 document.getElementById('activeUsersCount').innerText = activeCount;
 
-                renderUsersTable(users);
+                globalUsersList = users;
+                currentFilteredUsers = users;
+                userCurrentPage = 1;
+                renderUsersTable();
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red; padding:20px;">Lỗi tải dữ liệu khách hàng: ${err.message}</td></tr>`;
             }
         }
 
-        // Lọc và tìm kiếm khách hàng
+                // Lọc và tìm kiếm khách hàng
         function filterUsersTable() {
             const query = (document.getElementById('userSearchInput').value || '').toLowerCase().trim();
             const roleFilter = document.getElementById('userRoleFilter').value;
             const statusFilter = document.getElementById('userStatusFilter').value;
 
-            const filtered = globalUsersList.filter(u => {
+            currentFilteredUsers = globalUsersList.filter(u => {
                 const matchQuery = !query || 
                     (u.username && u.username.toLowerCase().includes(query)) ||
                     (u.full_name && u.full_name.toLowerCase().includes(query)) ||
@@ -400,18 +456,32 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
                 return matchQuery && matchRole && matchStatus;
             });
 
-            renderUsersTable(filtered);
+            userCurrentPage = 1; // Khi lọc hoặc tìm kiếm, luôn quay về trang 1
+            renderUsersTable();
         }
 
-        // Hiển thị danh sách khách hàng lên bảng
-        function renderUsersTable(users) {
+        // Chuyển trang người dùng
+        function changeUserPage(page) {
+            userCurrentPage = page;
+            renderUsersTable();
+        }
+
+        // Hiển thị danh sách khách hàng lên bảng (có cắt lát phân trang)
+        function renderUsersTable() {
             const tbody = document.getElementById('userTableBody');
-            if (!users || users.length === 0) {
+            const total = currentFilteredUsers.length;
+
+            if (total === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; color: #64748b; padding: 24px;">Không tìm thấy tài khoản khách hàng nào phù hợp.</td></tr>';
+                renderPaginationUI('usersPagination', 0, 1, PAGE_SIZE, 'changeUserPage');
                 return;
             }
 
-            tbody.innerHTML = users.map(u => {
+            // Cắt lát dữ liệu theo trang hiện tại (mỗi trang 10 dòng)
+            const startIndex = (userCurrentPage - 1) * PAGE_SIZE;
+            const pageUsers = currentFilteredUsers.slice(startIndex, startIndex + PAGE_SIZE);
+
+            tbody.innerHTML = pageUsers.map(u => {
                 const isSelf = parseInt(u.id) === currentAdminId;
                 const isActive = u.status === 'active';
                 const roleBadge = u.role === 'admin' 
@@ -438,39 +508,32 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
                 }
 
                 const contactInfo = `
-                    <div><strong>${u.email || '<span style=\"color:#94a3b8;\">Chưa có email</span>'}</strong></div>
-                    <div style="font-size:0.8rem; color:#64748b;">${u.phone ? ('📞 ' + u.phone) : ''}</div>
-                `;
-
-                const contribution = `
-                    <span title="Số báo cáo sự cố đã gửi" style="color:#2563eb; font-weight:600;"><i class="ph-bold ph-broadcast"></i> ${u.report_count || 0}</span> | 
-                    <span title="Số yêu cầu SOS" style="color:#ef4444; font-weight:600;"><i class="ph-bold ph-first-aid"></i> ${u.sos_count || 0}</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div class="user-avatar-circle">${(u.username || 'U')[0].toUpperCase()}</div>
+                        <div>
+                            <div style="font-weight:600; color:#0f172a;">${u.username}</div>
+                            <div style="font-size:0.75rem; color:#64748b;">${u.full_name || 'Chưa đặt tên'}</div>
+                        </div>
+                    </div>
                 `;
 
                 return `
                     <tr>
                         <td><strong>#${u.id}</strong></td>
-                        <td>
-                            <div style="display:flex; align-items:center; gap:8px;">
-                                <div style="width:32px; height:32px; border-radius:50%; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem;">
-                                    ${(u.full_name || u.username || 'U').charAt(0).toUpperCase()}
-                                </div>
-                                <div>
-                                    <strong style="color:#0f172a; display:block;">${u.username}</strong>
-                                    <span style="font-size:0.8rem; color:#64748b;">${u.full_name || 'Khách vãng lai'}</span>
-                                </div>
-                            </div>
-                        </td>
                         <td>${contactInfo}</td>
+                        <td><span style="color:#334155; font-size:0.84rem;">${u.email}</span></td>
                         <td>${roleBadge}</td>
-                        <td><strong style="color:#f59e0b;">⭐ ${u.reputation_score || 0}</strong></td>
-                        <td>${contribution}</td>
+                        <td><strong style="color:#eab308;">⭐ ${u.reputation_score}</strong></td>
+                        <td><span style="font-size:0.8rem; color:#64748b;">📍${u.total_reports || 0} | 💬${u.total_votes || 0}</span></td>
                         <td>${statusBadge}</td>
-                        <td><span style="font-size:0.8rem; color:#64748b;">${u.created_at ? u.created_at.substring(0, 10) : ''}</span></td>
+                        <td><span style="font-size:0.8rem; color:#64748b;">${(u.created_at || '').substring(0, 10)}</span></td>
                         <td>${actionBtns}</td>
                     </tr>
                 `;
             }).join('');
+
+            // Vẽ thanh phân trang
+            renderPaginationUI('usersPagination', total, userCurrentPage, PAGE_SIZE, 'changeUserPage');
         }
 
         // Xử lý hành động tài khoản khách hàng
@@ -510,55 +573,76 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
         }
 
         // TẢI DANH SÁCH SỰ CỐ
+                // TẢI DANH SÁCH SỰ CỐ
         async function loadReports() {
             const tbody = document.getElementById('reportsTableBody');
             try {
                 const res = await Api.adminReports('all');
                 const list = (res && res.data) ? res.data : (Array.isArray(res) ? res : []);
+                globalReportsList = list;
                 const activeCount = list.filter(r => r.status === 'dang_dien_ra').length;
                 document.getElementById('activeReportsCount').innerText = activeCount;
 
-                if (!list || list.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 24px;">Chưa có sự cố nào được ghi nhận.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = list.map(r => {
-                    let typeBadge = '<span class="badge badge-flood"><i class="ph-bold ph-waves"></i> Ngập nước</span>';
-                    if (r.type === 'ket_xe') typeBadge = '<span class="badge badge-traffic"><i class="ph-bold ph-car"></i> Kẹt xe</span>';
-                    if (r.type === 'cay_do') typeBadge = '<span class="badge" style="background:#dcfce7; color:#16a34a;"><i class="ph-bold ph-tree"></i> Cây đổ</span>';
-                    if (r.type === 'tai_nan') typeBadge = '<span class="badge" style="background:#fee2e2; color:#dc2626;"><i class="ph-bold ph-warning-octagon"></i> Tai nạn</span>';
-                    if (r.type === 'rao_chan') typeBadge = '<span class="badge" style="background:#fef3c7; color:#d97706;"><i class="ph-bold ph-barrier"></i> Rào chắn</span>';
-                    
-                    let statusBadge = '<span class="badge badge-active">🟢 Đang diễn ra</span>';
-                    if (r.status === 'da_ket_thuc') statusBadge = '<span class="badge badge-user">⚪ Đã kết thúc</span>';
-                    if (r.status === 'bi_an') statusBadge = '<span class="badge badge-blocked">🔴 Bị ẩn vi phạm</span>';
-
-                    return `
-                        <tr>
-                            <td><strong>#${r.id}</strong></td>
-                            <td>${typeBadge}</td>
-                            <td><strong>${r.severity || 'vua'}</strong></td>
-                            <td>${r.address_text || 'Chưa xác định'}</td>
-                            <td>${r.username || 'Ẩn danh'}</td>
-                            <td>👍 ${r.confirm_count || 0} | 👎 ${r.reject_count || 0}</td>
-                            <td>${statusBadge}</td>
-                            <td><span style="font-size:0.8rem; color:#64748b;">${r.expires_at || 'Không có'}</span></td>
-                            <td>
-                                <div style="display:flex; gap:6px;">
-                                    ${r.status !== 'bi_an' 
-                                        ? `<button class="btn-action btn-block" onclick="handleReportAction(${r.id}, 'hide')">Ẩn</button>` 
-                                        : `<button class="btn-action btn-unblock" onclick="handleReportAction(${r.id}, 'active')">Khôi phục</button>`}
-                                    ${r.status === 'dang_dien_ra' 
-                                        ? `<button class="btn-action btn-role" onclick="handleReportAction(${r.id}, 'end')">Đóng sự cố</button>` : ''}
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
+                reportCurrentPage = 1;
+                renderReportsTable();
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red; padding:20px;">Lỗi tải sự cố: ${err.message}</td></tr>`;
             }
+        }
+
+        function changeReportPage(page) {
+            reportCurrentPage = page;
+            renderReportsTable();
+        }
+
+        function renderReportsTable() {
+            const tbody = document.getElementById('reportsTableBody');
+            const total = globalReportsList.length;
+
+            if (total === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 24px;">Chưa có sự cố nào được ghi nhận.</td></tr>';
+                renderPaginationUI('reportsPagination', 0, 1, PAGE_SIZE, 'changeReportPage');
+                return;
+            }
+
+            const startIndex = (reportCurrentPage - 1) * PAGE_SIZE;
+            const pageReports = globalReportsList.slice(startIndex, startIndex + PAGE_SIZE);
+
+            tbody.innerHTML = pageReports.map(r => {
+                let typeBadge = '<span class="badge badge-flood"><i class="ph-bold ph-waves"></i> Ngập nước</span>';
+                if (r.type === 'ket_xe') typeBadge = '<span class="badge badge-traffic"><i class="ph-bold ph-car"></i> Kẹt xe</span>';
+                if (r.type === 'cay_do') typeBadge = '<span class="badge" style="background:#dcfce7; color:#16a34a;"><i class="ph-bold ph-tree"></i> Cây đổ</span>';
+                if (r.type === 'tai_nan') typeBadge = '<span class="badge" style="background:#fee2e2; color:#dc2626;"><i class="ph-bold ph-warning-octagon"></i> Tai nạn</span>';
+                if (r.type === 'rao_chan') typeBadge = '<span class="badge" style="background:#fef3c7; color:#d97706;"><i class="ph-bold ph-barrier"></i> Rào chắn</span>';
+                
+                let statusBadge = '<span class="badge badge-active">🟢 Đang diễn ra</span>';
+                if (r.status === 'da_ket_thuc') statusBadge = '<span class="badge badge-user">⚪ Đã kết thúc</span>';
+                if (r.status === 'bi_an') statusBadge = '<span class="badge badge-blocked">🔴 Bị ẩn vi phạm</span>';
+
+                return `
+                    <tr>
+                        <td><strong>#${r.id}</strong></td>
+                        <td>${typeBadge}</td>
+                        <td><strong>${r.severity || 'vua'}</strong></td>
+                        <td>${r.address_text || 'Chưa xác định'}</td>
+                        <td>${r.username || 'Ẩn danh'}</td>
+                        <td>👍 ${r.confirm_count || 0} | 👎 ${r.reject_count || 0}</td>
+                        <td>${statusBadge}</td>
+                        <td><span style="font-size:0.8rem; color:#64748b;">${r.expires_at || 'Không có'}</span></td>
+                        <td>
+                            <div style="display:flex; gap:6px;">
+                                ${r.status !== 'bi_an' 
+                                    ? `<button class="btn-action btn-block" onclick="handleReportAction(${r.id}, 'hide')">Ẩn</button>` 
+                                    : `<button class="btn-action btn-unblock" onclick="handleReportAction(${r.id}, 'active')">Khôi phục</button>`}
+                                ${r.status === 'dang_dien_ra' 
+                                    ? `<button class="btn-action btn-role" onclick="handleReportAction(${r.id}, 'end')">Đóng sự cố</button>` : ''}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            renderPaginationUI('reportsPagination', total, reportCurrentPage, PAGE_SIZE, 'changeReportPage');
         }
 
         async function handleReportAction(reportId, action) {
@@ -640,6 +724,61 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
             } catch(err) {}
 
             window.location.replace('index.php?route=logout&logged_out=1&_t=' + Date.now());
+        }
+
+                // HÀM DÙNG CHUNG VẼ NÚT PHÂN TRANG
+        function renderPaginationUI(containerId, totalItems, currentPage, pageSize, callbackName) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (totalItems <= pageSize) {
+                container.innerHTML = totalItems > 0 
+                    ? `<div class="pagination-info">Hiển thị toàn bộ <b>${totalItems}</b> bản ghi</div>` 
+                    : '';
+                return;
+            }
+
+            const totalPages = Math.ceil(totalItems / pageSize);
+            const startItem = (currentPage - 1) * pageSize + 1;
+            const endItem = Math.min(currentPage * pageSize, totalItems);
+
+            let buttonsHtml = '';
+
+            // Nút Về Trước
+            buttonsHtml += `
+                <button class="page-btn" ${currentPage === 1 ? 'disabled' : ''} onclick="${callbackName}(${currentPage - 1})">
+                    <i class="ph-bold ph-caret-left"></i> Trước
+                </button>
+            `;
+
+            // Các nút số trang
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    buttonsHtml += `
+                        <button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="${callbackName}(${i})">
+                            ${i}
+                        </button>
+                    `;
+                } else if (i === currentPage - 2 || i === currentPage + 2) {
+                    buttonsHtml += `<span style="color:#94a3b8; padding: 0 4px;">...</span>`;
+                }
+            }
+
+            // Nút Sang Sau
+            buttonsHtml += `
+                <button class="page-btn" ${currentPage === totalPages ? 'disabled' : ''} onclick="${callbackName}(${currentPage + 1})">
+                    Sau <i class="ph-bold ph-caret-right"></i>
+                </button>
+            `;
+
+            container.innerHTML = `
+                <div class="pagination-info">
+                    Hiển thị <b>${startItem} - ${endItem}</b> trên tổng số <b>${totalItems}</b> bản ghi
+                </div>
+                <div class="pagination-controls">
+                    ${buttonsHtml}
+                </div>
+            `;
         }
 
         // Khởi chạy nạp dữ liệu ban đầu
